@@ -64,4 +64,3 @@ class RegistrationFormTestCase(TestCase):
         }
         form = RegistrationForm(payload).is_valid()
         self.assertEqual(form, False)
-

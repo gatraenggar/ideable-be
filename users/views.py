@@ -1,10 +1,12 @@
 from .models import User
-from .utils.password_hasher import Hasher
+from .utils.password_manager import PasswordManager
 from .utils.model_mapper import ModelMapper
 from .utils.token_manager import TokenManager
 from .validators import RegistrationForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
+from .services.oauth.oauth import OAuth
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
@@ -20,8 +22,7 @@ class UserView(generic.ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, _):
-        userModels = User.objects.all().values()
-        users = ModelMapper.to_user_list(userModels)
+        users = User.get_users()
 
         return JsonResponse({
             "status": "success",
@@ -36,20 +37,15 @@ class UserView(generic.ListView):
             isPayloadValid = RegistrationForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            registeredUser = User.objects.filter(email=payload["email"])
-            if len(registeredUser): raise ConflictError("Email already registered")
+            registeredUser = User.get_user_by_field(email=payload["email"])
+            if registeredUser != None: raise ConflictError("Email already registered")
 
-            User(
-                email=payload["email"],
-                password=Hasher.hash_password(payload["password"]),
-                first_name=payload["first_name"],
-                last_name=payload["last_name"]
-            ).save()
+            payload["password"] = PasswordManager.hash(payload["password"])
 
-            user = User.objects.filter(email=payload["email"]).values()[0]
+            userUUID = User.register_user(payload)
 
-            auth_token = TokenManager.encode({"user_uuid": user["uuid"].hex})
-            send_confirmation_email(user["email"], auth_token)
+            auth_token = TokenManager.encode({"user_uuid": userUUID.hex})
+            send_confirmation_email(payload["email"], auth_token)
 
             return JsonResponse(
                 status = 201,
@@ -57,7 +53,7 @@ class UserView(generic.ListView):
                     "status": "success",
                     "message": "User has successfully registered",
                     "data": {
-                        "user_uuid": user["uuid"]
+                        "user_uuid": userUUID,
                     }
                 }
             )
@@ -67,11 +63,9 @@ class UserView(generic.ListView):
 class UserDetailView(UserView):
     def get(self, _, user_uuid):
         try:
-            userModel = User.objects.filter(pk=user_uuid).values()
-            if len(userModel) != 1: raise NotFoundError("User not found")
-
-            user = ModelMapper.to_single_user(userModel)
-    
+            user = User.get_user_by_field(uuid=user_uuid)
+            if user == None: raise NotFoundError("User not found")
+  
             return JsonResponse({
                 "status": "success",
                 "data": user,
@@ -84,18 +78,51 @@ class UserVerificationView(UserView):
         try:
             verificationParam = TokenManager.decode(auth_token)
 
-            user = User.objects.get(uuid=verificationParam["user_uuid"])
-            if user.is_confirmed: raise ClientError("Request is no longer valid")
-
-            user.is_confirmed = True
-            user.save(update_fields=['is_confirmed'])
+            userUUID = User.confirm_user_email(verificationParam["user_uuid"])
 
             return JsonResponse({
                 "status": "success",
                 "message": "Email has successfully verified",
                 "data": {
-                    "user_uuid": user.uuid,
+                    "user_uuid": userUUID,
                 }
+            })
+        except Exception as e:
+            return errorResponse(e)
+
+class UserOAuthView(UserView):
+    def get(self, _):
+        authURI = OAuth.request_user_consent()
+
+        return redirect(authURI)
+
+class UserOAuthCallbackView(UserView):
+    def get(self, request):
+        try:
+            authCode = request.GET.get("code")
+            userInfo = OAuth.request_user_info(authCode)
+
+            payload = {
+                "email": userInfo["email"],
+                "first_name": userInfo["given_name"],
+                "last_name": userInfo["family_name"],
+                "is_oauth": True,
+            }
+
+            registeredUser = User.get_user_by_field(email=payload["email"])
+            if registeredUser != None: raise ConflictError("Email already registered")
+
+            userUUID = User.register_user(payload)
+
+            auth_token = TokenManager.encode({"user_uuid": userUUID.hex})
+            send_confirmation_email(payload["email"], auth_token)
+
+            return JsonResponse({
+                "status": "success",
+                "message": "OAuth success",
+                "data": {
+                    "user_uuid": userUUID,
+                },
             })
         except Exception as e:
             return errorResponse(e)

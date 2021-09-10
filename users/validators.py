@@ -21,4 +21,3 @@ class RegistrationForm():
         if invalidChars != None: return False
 
         return True
-        
