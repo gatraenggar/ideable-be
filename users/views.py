@@ -1,6 +1,5 @@
 from .models import User
 from .utils.password_manager import PasswordManager
-from .utils.model_mapper import ModelMapper
 from .utils.token_manager import TokenManager
 from .validators import RegistrationForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
@@ -13,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json, sys
 
 sys.path.append("..")
+from auth.models import Authentications
 from errors.client_error import ClientError, ConflictError, NotFoundError
 from errors.handler import errorResponse
 
@@ -44,8 +44,13 @@ class UserView(generic.ListView):
 
             userUUID = User.register_user(payload)
 
-            auth_token = TokenManager.encode({"user_uuid": userUUID.hex})
-            send_confirmation_email(payload["email"], auth_token)
+            emailAuthToken = TokenManager.generate_random_token(userUUID)
+            send_confirmation_email(payload["email"], emailAuthToken)
+
+            accessToken = TokenManager.generate_access_token(userUUID)
+            refreshToken = TokenManager.generate_refresh_token(userUUID)
+
+            Authentications(refreshToken).save()
 
             return JsonResponse(
                 status = 201,
@@ -53,7 +58,8 @@ class UserView(generic.ListView):
                     "status": "success",
                     "message": "User has successfully registered",
                     "data": {
-                        "user_uuid": userUUID,
+                        "access_token": accessToken,
+                        "refresh_token": refreshToken,
                     }
                 }
             )
@@ -76,16 +82,13 @@ class UserDetailView(UserView):
 class UserVerificationView(UserView):
     def get(self, _, auth_token):
         try:
-            verificationParam = TokenManager.decode(auth_token)
+            verificationParam = TokenManager.verify_random_token(auth_token)
 
-            userUUID = User.confirm_user_email(verificationParam["user_uuid"])
+            User.confirm_user_email(verificationParam["user_uuid"])
 
             return JsonResponse({
                 "status": "success",
                 "message": "Email has successfully verified",
-                "data": {
-                    "user_uuid": userUUID,
-                }
             })
         except Exception as e:
             return errorResponse(e)
@@ -114,14 +117,20 @@ class UserOAuthCallbackView(UserView):
 
             userUUID = User.register_user(payload)
 
-            auth_token = TokenManager.encode({"user_uuid": userUUID.hex})
-            send_confirmation_email(payload["email"], auth_token)
+            emailAuthToken = TokenManager.generate_random_token(userUUID)
+            send_confirmation_email(payload["email"], emailAuthToken)
+
+            accessToken = TokenManager.generate_access_token(userUUID)
+            refreshToken = TokenManager.generate_refresh_token(userUUID)
+
+            Authentications(refreshToken).save()
 
             return JsonResponse({
                 "status": "success",
                 "message": "OAuth success",
                 "data": {
-                    "user_uuid": userUUID,
+                    "access_token": accessToken,
+                    "refresh_token": refreshToken,
                 },
             })
         except Exception as e:

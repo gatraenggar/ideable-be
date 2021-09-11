@@ -1,9 +1,14 @@
 from .client_error import ClientError, ConflictError, NotFoundError
 from django.http import JsonResponse
+import jwt
 
 def errorResponse(errorInstance):
     print(errorInstance)
-    if isinstance(errorInstance, (ClientError, ConflictError, NotFoundError)):
+    if isinstance(errorInstance, (
+        ClientError,
+        ConflictError,
+        NotFoundError,
+    )):
         return JsonResponse(
             status = errorInstance.statusCode,
             data = {
@@ -11,6 +16,14 @@ def errorResponse(errorInstance):
                 "message": str(errorInstance)
             }
         )
+    elif isinstance(errorInstance, (jwt.ExpiredSignatureError)):
+        return JsonResponse(
+            status = 401,
+            data = {
+                "status": "failed",
+                "message": "Request has expired"
+            }
+        ) 
     else:
         return JsonResponse(
             status = 500,
