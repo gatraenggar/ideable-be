@@ -1,7 +1,7 @@
 from .models import Authentications
 from .utils.password_manager import PasswordManager
 from .utils.token_manager import TokenManager
-from .validators import RegistrationForm, LoginForm
+from .validators import RegistrationForm, LoginForm, ResendEmailForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
 from django.http import JsonResponse
@@ -9,7 +9,7 @@ from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
-import json, sys
+import json, sys, uuid
 
 sys.path.append("..")
 from users.models import User
@@ -73,13 +73,37 @@ class EmailVerificationView(AuthView):
         except Exception as e:
             return errorResponse(e)
 
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            payload["email"] = payload["email"].strip()
+
+            isPayloadValid = ResendEmailForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            emailAuthToken = TokenManager.generate_random_token(userUUID)
+            send_confirmation_email(payload["email"], emailAuthToken)
+
+            return JsonResponse({
+                "status": "success",
+                "message": "An email verification has successfully re-sent",
+            })
+        except Exception as e:
+            return errorResponse(e)
+
 class OAuthView(AuthView):
     def get(self, _):
         authURI = OAuth.request_user_consent()
 
         return redirect(authURI)
 
-class OAuthCallbackView(generic.ListView):
+class OAuthCallbackView(AuthView):
     def get(self, request):
         try:
             authCode = request.GET.get("code")

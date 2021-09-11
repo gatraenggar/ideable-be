@@ -23,6 +23,14 @@ def errorResponse(errorInstance):
                 "status": "failed",
                 "message": "Request has expired"
             }
+        )
+    elif isinstance(errorInstance, (jwt.InvalidSignatureError)):
+        return JsonResponse(
+            status = 401,
+            data = {
+                "status": "failed",
+                "message": "Token invalid"
+            }
         ) 
     else:
         return JsonResponse(
