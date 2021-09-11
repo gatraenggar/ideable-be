@@ -3,40 +3,34 @@ from django.http import JsonResponse
 import jwt
 
 def errorResponse(errorInstance):
+    statusCode = 500
+    message = "Internal server error"
+
     print(errorInstance)
     if isinstance(errorInstance, (
         ClientError,
         ConflictError,
         NotFoundError,
     )):
-        return JsonResponse(
-            status = errorInstance.statusCode,
-            data = {
-                "status": "failed",
-                "message": str(errorInstance)
-            }
-        )
+        statusCode = errorInstance.statusCode
+        message = str(errorInstance)
+
     elif isinstance(errorInstance, (jwt.ExpiredSignatureError)):
-        return JsonResponse(
-            status = 401,
-            data = {
-                "status": "failed",
-                "message": "Request has expired"
-            }
-        )
+        statusCode = 401
+        message = "Request has expired"
+
     elif isinstance(errorInstance, (jwt.InvalidSignatureError)):
-        return JsonResponse(
-            status = 401,
-            data = {
-                "status": "failed",
-                "message": "Token invalid"
-            }
-        ) 
+        statusCode = 401
+        message = "Token invalid"
+        
     else:
-        return JsonResponse(
-            status = 500,
-            data = {
-                "status": "failed",
-                "message": "Internal server error"
-            }
-        )
+        statusCode = 500
+        message = "Internal server error"
+
+    return JsonResponse(
+        status = statusCode,
+        data = {
+            "status": "failed",
+            "message": message
+        }
+    )
