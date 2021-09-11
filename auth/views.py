@@ -1,7 +1,7 @@
 from .models import Authentications
 from .utils.password_manager import PasswordManager
 from .utils.token_manager import TokenManager
-from .validators import RegistrationForm
+from .validators import RegistrationForm, LoginForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
 from django.http import JsonResponse
@@ -30,7 +30,7 @@ class RegisterView(AuthView):
             isPayloadValid = RegistrationForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            registeredUser = User.get_user_by_field(email=payload["email"])
+            registeredUser = User.get_user_by_fields(email=payload["email"])
             if registeredUser != None: raise ConflictError("Email already registered")
 
             payload["password"] = PasswordManager.hash(payload["password"])
@@ -92,7 +92,7 @@ class OAuthCallbackView(generic.ListView):
                 "is_oauth": True,
             }
 
-            registeredUser = User.get_user_by_field(email=payload["email"])
+            registeredUser = User.get_user_by_fields(email=payload["email"])
             if registeredUser != None: raise ConflictError("Email already registered")
 
             userUUID = User.register_user(payload)
@@ -113,6 +113,40 @@ class OAuthCallbackView(generic.ListView):
                     "refresh_token": refreshToken,
                 },
             })
+        except Exception as e:
+            return errorResponse(e)
+
+class LoginView(AuthView):
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            payload["email"] = payload["email"].strip()
+
+            isPayloadValid = LoginForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            user = User.get_raw_user_by_email(payload["email"])
+            if user is None: raise ClientError("Email is not registered")
+
+            isPasswordTrue = PasswordManager.verify(user["password"], payload["password"])
+            if not isPasswordTrue: raise ClientError("Wrong password")
+
+            accessToken = TokenManager.generate_access_token(user["uuid"])
+            refreshToken = TokenManager.generate_refresh_token(user["uuid"])
+
+            Authentications(refreshToken).save()
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Login success",
+                    "data": {
+                        "access_token": accessToken,
+                        "refresh_token": refreshToken,
+                    }
+                }
+            )
         except Exception as e:
             return errorResponse(e)
 

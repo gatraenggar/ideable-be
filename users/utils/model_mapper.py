@@ -19,10 +19,10 @@ class ModelMapper():
         user = user_model[0]
         return {
             "uuid": user["uuid"],
-                "email": user["email"],
-                "first_name": user["first_name"],
-                "last_name": user["last_name"],
-                "first_name": user["first_name"],
-                "is_confirmed": user["is_confirmed"],
-                "created_at": user["created_at"],
+            "email": user["email"],
+            "first_name": user["first_name"],
+            "last_name": user["last_name"],
+            "first_name": user["first_name"],
+            "is_confirmed": user["is_confirmed"],
+            "created_at": user["created_at"],
         }

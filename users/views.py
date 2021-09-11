@@ -25,7 +25,7 @@ class UserView(generic.ListView):
 class UserDetailView(UserView):
     def get(self, _, user_uuid):
         try:
-            user = User.get_user_by_field(uuid=user_uuid)
+            user = User.get_user_by_fields(uuid=user_uuid)
             if user == None: raise NotFoundError("User not found")
   
             return JsonResponse({
