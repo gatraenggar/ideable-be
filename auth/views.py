@@ -66,10 +66,13 @@ class EmailVerificationView(AuthView):
 
             User.confirm_user_email(verificationParam["user_uuid"])
 
-            return JsonResponse({
-                "status": "success",
-                "message": "Email has successfully verified",
-            })
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Email has successfully verified",
+                }
+            )
         except Exception as e:
             return errorResponse(e)
 
@@ -90,10 +93,13 @@ class EmailVerificationView(AuthView):
             emailAuthToken = TokenManager.generate_random_token(userUUID)
             send_confirmation_email(payload["email"], emailAuthToken)
 
-            return JsonResponse({
-                "status": "success",
-                "message": "An email verification has successfully re-sent",
-            })
+            return JsonResponse(
+                status = 202,
+                data = {
+                    "status": "success",
+                    "message": "An email verification has successfully re-sent",
+                }
+            )
         except Exception as e:
             return errorResponse(e)
 
@@ -129,14 +135,17 @@ class OAuthCallbackView(AuthView):
 
             Authentications(refreshToken).save()
 
-            return JsonResponse({
-                "status": "success",
-                "message": "OAuth success",
-                "data": {
-                    "access_token": accessToken,
-                    "refresh_token": refreshToken,
-                },
-            })
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "OAuth success",
+                    "data": {
+                        "access_token": accessToken,
+                        "refresh_token": refreshToken,
+                    }
+                }
+            )
         except Exception as e:
             return errorResponse(e)
 
@@ -183,10 +192,13 @@ class LogoutView(AuthView):
             isDeleted = Authentications.delete_refresh_token(token)
             if not isDeleted: raise NotFoundError("Token not found")
 
-            return JsonResponse({
-                "status": "success",
-                "message": "Logout success",
-            })
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Logout success",
+                }
+            )
         except Exception as e:
             return errorResponse(e)
 
@@ -204,12 +216,15 @@ class AuthTokenView(AuthView):
 
             accessToken = TokenManager.generate_access_token(userUUID)
 
-            return JsonResponse({
-                "status": "success",
-                "message": "Access token has successfully generated",
-                "data": {
-                    "access_token": accessToken,
-                },
-            })
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Access token has successfully generated",
+                    "data": {
+                        "access_token": accessToken,
+                    }
+                }
+            )
         except Exception as e:
             return errorResponse(e)

@@ -17,10 +17,13 @@ class UserView(generic.ListView):
     def get(self, _):
         users = User.get_users()
 
-        return JsonResponse({
-            "status": "success",
-            "data": users
-        })
+        return JsonResponse(
+            status = 200,
+            data = {
+                "status": "success",
+                "data": users
+            }
+        )
 
 class UserDetailView(UserView):
     def get(self, _, user_uuid):
@@ -28,9 +31,12 @@ class UserDetailView(UserView):
             user = User.get_user_by_fields(uuid=user_uuid)
             if user == None: raise NotFoundError("User not found")
   
-            return JsonResponse({
-                "status": "success",
-                "data": user,
-            })
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "data": user,
+                }
+            )
         except Exception as e:
             return errorResponse(e)
