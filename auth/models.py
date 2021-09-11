@@ -11,3 +11,8 @@ class Authentications(models.Model):
         return json.dumps({
             "refresh_token": self.refresh_token,
         })
+
+    def delete_refresh_token(token):
+        result = Authentications.objects.filter(refresh_token=token).delete()
+
+        return result[0]

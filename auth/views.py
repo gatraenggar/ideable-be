@@ -13,7 +13,7 @@ import json, sys
 
 sys.path.append("..")
 from users.models import User
-from errors.client_error import ClientError, ConflictError
+from errors.client_error import ClientError, ConflictError, NotFoundError
 from errors.handler import errorResponse
 
 class AuthView(generic.ListView):
@@ -112,6 +112,22 @@ class OAuthCallbackView(generic.ListView):
                     "access_token": accessToken,
                     "refresh_token": refreshToken,
                 },
+            })
+        except Exception as e:
+            return errorResponse(e)
+
+class LogoutView(AuthView):
+    def post(self, request):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            isDeleted = Authentications.delete_refresh_token(token)
+            if not isDeleted: raise NotFoundError("Token not found")
+
+            return JsonResponse({
+                "status": "success",
+                "message": "Logout success",
             })
         except Exception as e:
             return errorResponse(e)
