@@ -189,3 +189,27 @@ class LogoutView(AuthView):
             })
         except Exception as e:
             return errorResponse(e)
+
+class AuthTokenView(AuthView):
+    def get(self, request):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_refresh_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            refreshToken = Authentications.get_refresh_token(token)
+            if refreshToken == None: raise NotFoundError("Refresh token not found")            
+
+            accessToken = TokenManager.generate_access_token(userUUID)
+
+            return JsonResponse({
+                "status": "success",
+                "message": "Access token has successfully generated",
+                "data": {
+                    "access_token": accessToken,
+                },
+            })
+        except Exception as e:
+            return errorResponse(e)

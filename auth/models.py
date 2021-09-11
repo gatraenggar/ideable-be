@@ -12,6 +12,12 @@ class Authentications(models.Model):
             "refresh_token": self.refresh_token,
         })
 
+    def get_refresh_token(token):
+        authModel = Authentications.objects.filter(refresh_token=token).values()
+        if len(authModel) != 1: return None
+
+        return authModel[0]["refresh_token"]
+
     def delete_refresh_token(token):
         result = Authentications.objects.filter(refresh_token=token).delete()
 
