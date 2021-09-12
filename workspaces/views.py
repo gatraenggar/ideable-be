@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import ClientError
+from errors.client_error import AuthenticationError, ClientError
 from errors.handler import errorResponse
 from auth.utils.token_manager import TokenManager
 from users.models import User
@@ -24,7 +24,7 @@ class WorkspaceView(generic.ListView):
             userData = TokenManager.verify_access_token(token)
 
             user = User.get_user_by_fields(uuid=uuid.UUID(userData["user_uuid"]))
-            if user == None or not user["is_confirmed"]: raise ClientError("User is not authorized")
+            if user == None or not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
 
             payload = json.loads(request.body)
             payload["owner"] = User(uuid=user["uuid"])
