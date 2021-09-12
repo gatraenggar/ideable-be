@@ -1,4 +1,4 @@
-from .models import Authentications
+from .models import Authentication
 from .utils.password_manager import PasswordManager
 from .utils.token_manager import TokenManager
 from .validators import RegistrationForm, LoginForm, ResendEmailForm
@@ -43,7 +43,7 @@ class RegisterView(AuthView):
             accessToken = TokenManager.generate_access_token(userUUID)
             refreshToken = TokenManager.generate_refresh_token(userUUID)
 
-            Authentications(refreshToken).save()
+            Authentication(refreshToken).save()
 
             return JsonResponse(
                 status = 201,
@@ -133,7 +133,7 @@ class OAuthCallbackView(AuthView):
             accessToken = TokenManager.generate_access_token(userUUID)
             refreshToken = TokenManager.generate_refresh_token(userUUID)
 
-            Authentications(refreshToken).save()
+            Authentication(refreshToken).save()
 
             return JsonResponse(
                 status = 201,
@@ -167,7 +167,7 @@ class LoginView(AuthView):
             accessToken = TokenManager.generate_access_token(user["uuid"])
             refreshToken = TokenManager.generate_refresh_token(user["uuid"])
 
-            Authentications(refreshToken).save()
+            Authentication(refreshToken).save()
 
             return JsonResponse(
                 status = 200,
@@ -189,7 +189,7 @@ class LogoutView(AuthView):
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
 
-            isDeleted = Authentications.delete_refresh_token(token)
+            isDeleted = Authentication.delete_refresh_token(token)
             if not isDeleted: raise NotFoundError("Token not found")
 
             return JsonResponse(
@@ -211,7 +211,7 @@ class AuthTokenView(AuthView):
             userData = TokenManager.verify_refresh_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
-            refreshToken = Authentications.get_refresh_token(token)
+            refreshToken = Authentication.get_refresh_token(token)
             if refreshToken == None: raise NotFoundError("Refresh token not found")            
 
             accessToken = TokenManager.generate_access_token(userUUID)

@@ -17,6 +17,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 INSTALLED_APPS = [
     'auth',
     'users',
+    'workspaces',
 ]
 
 MIDDLEWARE = [

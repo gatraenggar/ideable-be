@@ -15,7 +15,7 @@ class TokenManager():
     def generate_access_token(uuid):
         payload = {
             "user_uuid": uuid.hex,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=150),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=300),
         }
         return jwt.encode(payload, config("ACCESS_TOKEN_KEY"), algorithm="HS256")
 
@@ -25,7 +25,7 @@ class TokenManager():
     def generate_refresh_token(uuid):
         payload = {
             "user_uuid": uuid.hex,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=300),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=1200),
         }
         return jwt.encode(payload, config("REFRESH_TOKEN_KEY"), algorithm="HS256")
 

@@ -1,7 +1,7 @@
 from django.db import models
 import json
 
-class Authentications(models.Model):
+class Authentication(models.Model):
     class Meta:
         db_table = '"authentications"'
 
@@ -13,12 +13,12 @@ class Authentications(models.Model):
         })
 
     def get_refresh_token(token):
-        authModel = Authentications.objects.filter(refresh_token=token).values()
+        authModel = Authentication.objects.filter(refresh_token=token).values()
         if len(authModel) != 1: return None
 
         return authModel[0]["refresh_token"]
 
     def delete_refresh_token(token):
-        result = Authentications.objects.filter(refresh_token=token).delete()
+        result = Authentication.objects.filter(refresh_token=token).delete()
 
         return result[0]
