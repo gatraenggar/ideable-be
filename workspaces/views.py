@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import AuthenticationError, ClientError, NotFoundError
+from errors.client_error import AuthenticationError, AuthorizationError, ClientError, NotFoundError
 from errors.handler import errorResponse
 from auth.utils.token_manager import TokenManager
 from users.models import User
@@ -85,6 +85,32 @@ class WorkspaceDetailView(WorkspaceView):
                     "status": "success",
                     "message": "Get user's workspace by ID",
                     "data": workspace,
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def put(self, request, workspace_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            payload = json.loads(request.body)
+            payload["owner"] = User(uuid=userUUID)
+
+            isPayloadValid = WorkspaceForm(payload).is_valid()
+            if not isPayloadValid: return ClientError("Invalid input")
+
+            Workspace.update_name(workspace_uuid, payload["name"], payload["owner"])
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Workspace has successfully updated",
                 }
             )
         except Exception as e:
