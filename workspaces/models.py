@@ -28,9 +28,9 @@ class Workspace(models.Model):
 
         return workspaces
 
-    def get_workspace_by_uuid(workspace_uuid):
-        workspaceModel = Workspace.objects.filter(uuid=workspace_uuid).values()
-        if len(workspaceModel) < 1: return {}
+    def get_workspace_by_uuid(workspace_uuid, owner_uuid):
+        workspaceModel = Workspace.objects.filter(uuid=workspace_uuid, owner=owner_uuid).values()
+        if len(workspaceModel) < 1: return None
 
         workspace = ModelMapper.to_single_workspace(workspaceModel)
 

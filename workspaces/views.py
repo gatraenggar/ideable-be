@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import AuthenticationError, ClientError
+from errors.client_error import AuthenticationError, ClientError, NotFoundError
 from errors.handler import errorResponse
 from auth.utils.token_manager import TokenManager
 from users.models import User
@@ -73,9 +73,11 @@ class WorkspaceDetailView(WorkspaceView):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
-            TokenManager.verify_access_token(token)
+            userData = TokenManager.verify_access_token(token)
 
-            workspace = Workspace.get_workspace_by_uuid(workspace_uuid)
+            ownerUUID = uuid.UUID(userData["user_uuid"])
+            workspace = Workspace.get_workspace_by_uuid(workspace_uuid, ownerUUID)
+            if workspace == None: raise NotFoundError("Workspace not found")
 
             return JsonResponse(
                 status = 200,
