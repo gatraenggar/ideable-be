@@ -4,7 +4,7 @@ from django.db import models
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import AuthorizationError
+from errors.client_error import AuthorizationError, NotFoundError
 from users.models import User
 
 class Workspace(models.Model):
@@ -44,3 +44,14 @@ class Workspace(models.Model):
 
         workspace.name = new_name
         workspace.save(update_fields=["name"])
+
+    def delete_workspace(workspace_uuid, owner_uuid):
+        workspaceQuery = Workspace.objects.filter(uuid=workspace_uuid)        
+        workspace = workspaceQuery.values()
+        
+        if not len(workspace): raise NotFoundError("Workspace not found")
+        if workspace[0]["owner_id"] != owner_uuid: raise AuthorizationError("Action is forbidden")
+
+        result = workspaceQuery.delete()
+
+        return result[0]

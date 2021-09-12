@@ -1,3 +1,4 @@
+from django.core.checks.messages import Error
 from .models import Workspace
 from .validators import WorkspaceForm
 from django.http.response import JsonResponse
@@ -111,6 +112,26 @@ class WorkspaceDetailView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Workspace has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def delete(self, request, workspace_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            Workspace.delete_workspace(workspace_uuid, userUUID)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Workspace has successfully deleted",
                 }
             )
         except Exception as e:
