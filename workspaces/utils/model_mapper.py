@@ -9,3 +9,11 @@ class ModelMapper():
             })
 
         return workspaceList
+
+    def to_single_workspace(workspace_models):
+        workspaceDict = {}
+        for workspace in workspace_models:
+            workspaceDict["uuid"] = workspace["uuid"]
+            workspaceDict["name"] = workspace["name"]
+
+        return workspaceDict

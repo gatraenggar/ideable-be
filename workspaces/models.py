@@ -27,3 +27,11 @@ class Workspace(models.Model):
         workspaces = ModelMapper.to_workspace_list(workspaceModel)
 
         return workspaces
+
+    def get_workspace_by_uuid(workspace_uuid):
+        workspaceModel = Workspace.objects.filter(uuid=workspace_uuid).values()
+        if len(workspaceModel) < 1: return {}
+
+        workspace = ModelMapper.to_single_workspace(workspaceModel)
+
+        return workspace

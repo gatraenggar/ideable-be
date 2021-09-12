@@ -67,3 +67,23 @@ class WorkspaceView(generic.ListView):
             )
         except Exception as e:
             return errorResponse(e)
+
+class WorkspaceDetailView(WorkspaceView):
+    def get(self, request, workspace_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+            TokenManager.verify_access_token(token)
+
+            workspace = Workspace.get_workspace_by_uuid(workspace_uuid)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Get user's workspace by ID",
+                    "data": workspace,
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
