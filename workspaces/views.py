@@ -17,6 +17,26 @@ class WorkspaceView(generic.ListView):
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
+    def get(self, request):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+            userData = TokenManager.verify_access_token(token)
+
+            userUUID = uuid.UUID(userData["user_uuid"])
+            workspaces = Workspace.get_workspaces(userUUID)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Get user's workspaces",
+                    "data": workspaces,
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
     def post(self, request):
         try:
             bearerToken = request.headers["Authorization"]

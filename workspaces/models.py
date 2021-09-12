@@ -1,3 +1,4 @@
+from .utils.model_mapper import ModelMapper
 from django.db import models
 import json, sys, uuid
 
@@ -18,3 +19,11 @@ class Workspace(models.Model):
             "name": self.name,
             "owner": self.owner,
         })
+
+    def get_workspaces(user_uuid):
+        workspaceModel = Workspace.objects.filter(owner=user_uuid).values()
+        if len(workspaceModel) < 1: return []
+
+        workspaces = ModelMapper.to_workspace_list(workspaceModel)
+
+        return workspaces
