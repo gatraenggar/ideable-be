@@ -37,7 +37,11 @@ class RegisterView(AuthView):
 
             userUUID = User.register_user(payload)
 
-            emailAuthToken = TokenManager.generate_random_token(userUUID)
+            tokenPayload = {
+                "user_uuid": userUUID.hex,
+                "uri": "auth/email-verification/",
+            }
+            emailAuthToken = TokenManager.generate_random_token(tokenPayload)
             send_confirmation_email(payload["email"], emailAuthToken)
 
             accessToken = TokenManager.generate_access_token(userUUID)
@@ -88,9 +92,12 @@ class EmailVerificationView(AuthView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            userUUID = uuid.UUID(userData["user_uuid"])
+            tokenPayload = {
+                "user_uuid": userData["user_uuid"],
+                "uri": "auth/email-verification/",
+            }
 
-            emailAuthToken = TokenManager.generate_random_token(userUUID)
+            emailAuthToken = TokenManager.generate_random_token(tokenPayload)
             send_confirmation_email(payload["email"], emailAuthToken)
 
             return JsonResponse(
@@ -122,13 +129,26 @@ class OAuthCallbackView(AuthView):
                 "is_oauth": True,
             }
 
+            userUUID = None
+            statusCode = None
+
             registeredUser = User.get_user_by_fields(email=payload["email"])
-            if registeredUser != None: raise ConflictError("Email already registered")
+            if registeredUser == None: 
+                userUUID = User.register_user(payload)
+                statusCode = 201
 
-            userUUID = User.register_user(payload)
+                tokenPayload = {
+                    "user_uuid": userUUID.hex,
+                    "uri": "auth/email-verification/",
+                }
 
-            emailAuthToken = TokenManager.generate_random_token(userUUID)
-            send_confirmation_email(payload["email"], emailAuthToken)
+                emailAuthToken = TokenManager.generate_random_token(tokenPayload)
+                send_confirmation_email(payload["email"], emailAuthToken)
+            else:
+                if registeredUser["is_oauth"]:
+                    userUUID = registeredUser["uuid"]
+                    statusCode = 200
+                else: raise ConflictError("Email already registered")
 
             accessToken = TokenManager.generate_access_token(userUUID)
             refreshToken = TokenManager.generate_refresh_token(userUUID)
@@ -136,7 +156,7 @@ class OAuthCallbackView(AuthView):
             Authentication(refreshToken).save()
 
             return JsonResponse(
-                status = 201,
+                status = statusCode,
                 data = {
                     "status": "success",
                     "message": "OAuth success",
@@ -158,7 +178,7 @@ class LoginView(AuthView):
             isPayloadValid = LoginForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            user = User.get_raw_user_by_email(payload["email"])
+            user = User.get_user_model_by_fields(email=payload["email"])
             if user is None: raise ClientError("Email is not registered")
 
             isPasswordTrue = PasswordManager.verify(user["password"], payload["password"])

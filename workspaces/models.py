@@ -3,7 +3,7 @@ from django.db import models
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import AuthorizationError, NotFoundError
+from errors.client_error import AuthorizationError, ClientError, NotFoundError
 from users.models import User
 
 class Workspace(models.Model):
@@ -21,6 +21,12 @@ class Workspace(models.Model):
             "owner": self.owner,
         })
 
+    def create_workspace(**payload):
+        workspace = Workspace(**payload)
+        workspace.save()
+
+        return workspace.uuid        
+
     def get_workspaces(user_uuid):
         workspaceModel = Workspace.objects.filter(owner=user_uuid).values()
         if len(workspaceModel) < 1: return []
@@ -29,8 +35,8 @@ class Workspace(models.Model):
 
         return workspaces
 
-    def get_workspace_by_uuid(workspace_uuid, owner_uuid):
-        workspaceModel = Workspace.objects.filter(uuid=workspace_uuid, owner=owner_uuid).values()
+    def get_workspace_by_fields(**payload):
+        workspaceModel = Workspace.objects.filter(**payload).values()
         if len(workspaceModel) < 1: return None
 
         workspace = ModelMapper.to_single_workspace(workspaceModel)
@@ -38,11 +44,12 @@ class Workspace(models.Model):
         return workspace
 
     def update_name(workspace_uuid, new_name, owner_uuid):
-        workspace = Workspace.objects.get(uuid=workspace_uuid)
-        if workspace.owner != owner_uuid: raise AuthorizationError("Action is forbidden")
+        workspace = Workspace.objects.filter(uuid=workspace_uuid).values()
+        if len(workspace) != 1: raise ClientError("Workspace not found")
 
-        workspace.name = new_name
-        workspace.save(update_fields=["name"])
+        if workspace[0]["owner_id"] != owner_uuid: raise AuthorizationError("Action is forbidden")
+
+        workspace.update(name=new_name)
 
     def delete_workspace(workspace_uuid, owner_uuid):
         workspaceQuery = Workspace.objects.filter(uuid=workspace_uuid)        
@@ -70,6 +77,18 @@ class WorkspaceMember(models.Model):
             "member_id": self.member_id,
         })
 
+    def add_workspace_member(**payload):
+        workspaceMember = WorkspaceMember(**payload)
+        workspaceMember.save()
+
+        return workspaceMember.uuid
+
+    def get_member_by_fields(**payload):
+        workspaceMember = WorkspaceMember.objects.filter(**payload).values()
+        if not len(workspaceMember): return None
+
+        return workspaceMember
+
 class WorkspaceMemberQueue(models.Model):
     class Meta:
         db_table = '"workspace_member_queues"'
@@ -86,3 +105,22 @@ class WorkspaceMemberQueue(models.Model):
             "email": self.email,
             "token": self.token,
         })
+
+    def create_membership_queue(**payload):
+        membershipQueue = WorkspaceMemberQueue(**payload)
+        membershipQueue.save()
+        
+        return membershipQueue.uuid
+
+    def renew_membership_queue(**payload):
+        memberQueueQuery = WorkspaceMemberQueue.objects.filter(**payload)
+        if len(memberQueueQuery.values()) != 0:
+            queryDeleted = memberQueueQuery.delete()[0]
+            return queryDeleted
+
+        return None
+
+    def delete_queue(**payload):
+        queueDeleted = WorkspaceMemberQueue.objects.filter(**payload).delete()[0]
+
+        return queueDeleted

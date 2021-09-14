@@ -24,5 +24,6 @@ class ModelMapper():
             "last_name": user["last_name"],
             "first_name": user["first_name"],
             "is_confirmed": user["is_confirmed"],
+            "is_oauth": user["is_oauth"],
             "created_at": user["created_at"],
         }

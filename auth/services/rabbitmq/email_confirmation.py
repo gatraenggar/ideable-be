@@ -6,11 +6,11 @@ def send_confirmation_email(recipient_email, auth_token):
     )
     channel = connection.channel()
 
-    channel.exchange_declare(exchange='email_confirmation', exchange_type='direct')
+    channel.exchange_declare(exchange='service_logs', exchange_type='direct')
 
     message = recipient_email + ' ' + auth_token
     channel.basic_publish(
-        exchange='email_confirmation',
+        exchange='service_logs',
         routing_key='email_confirmation',
         body=message,
         properties=pika.BasicProperties(

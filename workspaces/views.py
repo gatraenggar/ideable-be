@@ -54,8 +54,7 @@ class WorkspaceView(generic.ListView):
             isPayloadValid = WorkspaceForm(payload).is_valid()
             if not isPayloadValid: return ClientError("Invalid input")
 
-            workspace = Workspace(**payload)
-            workspace.save()
+            workspaceUUID = Workspace.create_workspace(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -63,7 +62,7 @@ class WorkspaceView(generic.ListView):
                     "status": "success",
                     "message": "Workspace has successfully created",
                     "data": {
-                        "workspace_uuid": workspace.uuid
+                        "workspace_uuid": workspaceUUID
                     }
                 }
             )
@@ -78,7 +77,7 @@ class WorkspaceDetailView(WorkspaceView):
             userData = TokenManager.verify_access_token(token)
 
             ownerUUID = uuid.UUID(userData["user_uuid"])
-            workspace = Workspace.get_workspace_by_uuid(workspace_uuid, ownerUUID)
+            workspace = Workspace.get_workspace_by_fields(uuid=workspace_uuid, owner=ownerUUID)
             if workspace == None: raise NotFoundError("Workspace not found")
 
             return JsonResponse(
@@ -101,7 +100,7 @@ class WorkspaceDetailView(WorkspaceView):
             userUUID = uuid.UUID(userData["user_uuid"])
 
             payload = json.loads(request.body)
-            payload["owner"] = User(uuid=userUUID)
+            payload["owner"] = userUUID
 
             isPayloadValid = WorkspaceForm(payload).is_valid()
             if not isPayloadValid: return ClientError("Invalid input")
@@ -146,16 +145,16 @@ class WorkspaceMemberView(WorkspaceView):
             user = User.get_user_by_fields(email=authPayload["email"])
             if user == None: return redirect("http://localhost:3000/register")
 
-            isQueueDeleted = WorkspaceMemberQueue.objects.filter(token=auth_token).delete()[0]
+            isQueueDeleted = WorkspaceMemberQueue.delete_queue(token=auth_token)
             if not isQueueDeleted: raise ClientError("Request invalid")
 
-            WorkspaceMember(
+            WorkspaceMember.add_workspace_member(
                 workspace=Workspace(uuid=workspace_uuid),
                 member=User(uuid=user["uuid"]),
-            ).save()
+            )
 
             if not user["is_confirmed"]:
-                redirect("http://localhost:3000/profile")
+                return redirect("http://localhost:3000/profile")
 
             return JsonResponse(
                 status = 201,
@@ -180,24 +179,34 @@ class WorkspaceMemberView(WorkspaceView):
             isPayloadValid = WorkspaceMemberForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            memberQueueQuery = WorkspaceMemberQueue.objects.filter(
-                workspace_id=workspace_uuid,
-                email=payload["email"]
-            )
-            if len(memberQueueQuery.values()) != 0:
-                memberQueueQuery.delete()
+            workspace = Workspace.get_workspace_by_fields(uuid=workspace_uuid)
+            if workspace == None: raise ClientError("Workspace not found")
 
-            memberAuthJson = {
+            user = User.get_user_by_fields(email=payload["email"])
+            if user != None:
+                workspaceMember = WorkspaceMember.get_member_by_fields(
+                    workspace=workspace_uuid,
+                    member=User(uuid=user["uuid"])
+                )
+                if workspaceMember != None: raise ClientError("User is already the member")
+
+            WorkspaceMemberQueue.renew_membership_queue(
+                workspace=workspace_uuid,
+                email=payload["email"],
+            )
+
+            tokenPayload = {
                 "workspace_uuid": workspace_uuid.hex,
                 "email": payload["email"],
+                "uri": "workspaces/" + str(uuid.UUID(workspace_uuid.hex)) + "/members/",
             }
-            emailAuthToken = TokenManager.generate_random_token(memberAuthJson)
+            emailAuthToken = TokenManager.generate_random_token(tokenPayload)
 
-            WorkspaceMemberQueue(
+            WorkspaceMemberQueue.create_membership_queue(
                 workspace=Workspace(uuid=workspace_uuid),
                 email=payload["email"],
                 token=emailAuthToken,
-            ).save()
+            )
 
             send_invitation_email(payload["email"], emailAuthToken)
 

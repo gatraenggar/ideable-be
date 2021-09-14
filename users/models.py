@@ -43,16 +43,16 @@ class User(models.Model):
 
         return users
 
-    def get_user_by_fields(**kwargs):
-        userModel = User.objects.filter(**kwargs).values()
+    def get_user_by_fields(**payload):
+        userModel = User.objects.filter(**payload).values()
         if not len(userModel): return None
 
         user = ModelMapper.to_single_user(userModel)
 
         return user
 
-    def get_raw_user_by_email(user_email):
-        userModel = User.objects.filter(email=user_email).values()
+    def get_user_model_by_fields(**kwargs):
+        userModel = User.objects.filter(**kwargs).values()
         if len(userModel) != 1: return None
 
         return userModel[0]

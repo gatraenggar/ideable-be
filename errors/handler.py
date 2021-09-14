@@ -17,7 +17,7 @@ def errorResponse(errorInstance):
 
     elif isinstance(errorInstance, (jwt.ExpiredSignatureError)):
         statusCode = 401
-        message = "Request has expired"
+        message = "Token has expired"
 
     elif isinstance(errorInstance, (jwt.InvalidSignatureError)):
         statusCode = 401
