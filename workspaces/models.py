@@ -1,4 +1,3 @@
-from django.core.checks.messages import Error
 from .utils.model_mapper import ModelMapper
 from django.db import models
 import json, sys, uuid
@@ -55,3 +54,35 @@ class Workspace(models.Model):
         result = workspaceQuery.delete()
 
         return result[0]
+
+class WorkspaceMember(models.Model):
+    class Meta:
+        db_table = '"workspace_members"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(Workspace, on_delete=models.DO_NOTHING)
+    member = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+
+    def __str__(self):
+        return json.dumps({
+            "uuid": self.uuid,
+            "workspace_id": self.workspace_id,
+            "member_id": self.member_id,
+        })
+
+class WorkspaceMemberQueue(models.Model):
+    class Meta:
+        db_table = '"workspace_member_queues"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(Workspace, on_delete=models.DO_NOTHING)
+    email = models.EmailField(unique=False, max_length=254)
+    token = models.CharField(max_length=1000)
+
+    def __str__(self):
+        return json.dumps({
+            "uuid": self.uuid,
+            "workspace": self.workspace,
+            "email": self.email,
+            "token": self.token,
+        })

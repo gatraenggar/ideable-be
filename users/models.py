@@ -45,7 +45,7 @@ class User(models.Model):
 
     def get_user_by_fields(**kwargs):
         userModel = User.objects.filter(**kwargs).values()
-        if len(userModel) != 1: return None
+        if not len(userModel): return None
 
         user = ModelMapper.to_single_user(userModel)
 

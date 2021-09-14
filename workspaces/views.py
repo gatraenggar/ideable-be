@@ -1,14 +1,15 @@
-from django.core.checks.messages import Error
-from .models import Workspace
-from .validators import WorkspaceForm
+from .models import Workspace, WorkspaceMember, WorkspaceMemberQueue
+from .services.rabbitmq.workspace_invitation import send_invitation_email
+from .validators import WorkspaceForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
+from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import AuthenticationError, AuthorizationError, ClientError, NotFoundError
+from errors.client_error import AuthenticationError, ClientError, NotFoundError
 from errors.handler import errorResponse
 from auth.utils.token_manager import TokenManager
 from users.models import User
@@ -132,6 +133,79 @@ class WorkspaceDetailView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Workspace has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class WorkspaceMemberView(WorkspaceView):
+    def get(self, _, workspace_uuid, auth_token):
+        try:
+            authPayload = TokenManager.verify_random_token(auth_token)
+
+            user = User.get_user_by_fields(email=authPayload["email"])
+            if user == None: return redirect("http://localhost:3000/register")
+
+            isQueueDeleted = WorkspaceMemberQueue.objects.filter(token=auth_token).delete()[0]
+            if not isQueueDeleted: raise ClientError("Request invalid")
+
+            WorkspaceMember(
+                workspace=Workspace(uuid=workspace_uuid),
+                member=User(uuid=user["uuid"]),
+            ).save()
+
+            if not user["is_confirmed"]:
+                redirect("http://localhost:3000/profile")
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "Workspace membership has successfully verified",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def post(self, request, workspace_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            ownerData = TokenManager.verify_access_token(token)
+            owner = User.get_user_by_fields(uuid=ownerData["user_uuid"])
+            if not owner["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            payload = json.loads(request.body)
+            isPayloadValid = WorkspaceMemberForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            memberQueueQuery = WorkspaceMemberQueue.objects.filter(
+                workspace_id=workspace_uuid,
+                email=payload["email"]
+            )
+            if len(memberQueueQuery.values()) != 0:
+                memberQueueQuery.delete()
+
+            memberAuthJson = {
+                "workspace_uuid": workspace_uuid.hex,
+                "email": payload["email"],
+            }
+            emailAuthToken = TokenManager.generate_random_token(memberAuthJson)
+
+            WorkspaceMemberQueue(
+                workspace=Workspace(uuid=workspace_uuid),
+                email=payload["email"],
+                token=emailAuthToken,
+            ).save()
+
+            send_invitation_email(payload["email"], emailAuthToken)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Invitation email has successfully sent to user",
                 }
             )
         except Exception as e:
