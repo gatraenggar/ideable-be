@@ -67,7 +67,7 @@ class WorkspaceMember(models.Model):
         db_table = '"workspace_members"'
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    workspace = models.ForeignKey(Workspace, on_delete=models.DO_NOTHING)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     member = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
     def __str__(self):
@@ -94,7 +94,7 @@ class WorkspaceMemberQueue(models.Model):
         db_table = '"workspace_member_queues"'
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    workspace = models.ForeignKey(Workspace, on_delete=models.DO_NOTHING)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     email = models.EmailField(unique=False, max_length=254)
     token = models.CharField(max_length=1000)
 
