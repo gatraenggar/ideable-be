@@ -66,9 +66,15 @@ class WorkspaceMember(models.Model):
     class Meta:
         db_table = '"workspace_members"'
 
+    class MemberStatus(models.IntegerChoices):
+        INVITED = 1
+        PENDING = 2
+        JOINED = 3
+
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
-    member = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    email = models.EmailField(unique=True, max_length=254, null=True)
+    status = models.IntegerField(choices=MemberStatus.choices, default=1, null=False)
 
     def __str__(self):
         return json.dumps({
@@ -89,50 +95,11 @@ class WorkspaceMember(models.Model):
 
         return workspaceMember
 
-class WorkspaceMemberQueue(models.Model):
-    class Meta:
-        db_table = '"workspace_member_queues"'
+    def update_member_status(workspace, email, status):
+        workspaceMember = WorkspaceMember.objects.get(workspace=workspace, email=email)
+        if workspaceMember.status == 3: raise ClientError("Request invalid")
 
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
-    email = models.EmailField(unique=False, max_length=254)
-    token = models.CharField(max_length=1000, unique=True)
-    is_pending_join = models.BooleanField(default=False)
+        workspaceMember.status = status
+        workspaceMember.save(update_fields=["status"])
 
-    def __str__(self):
-        return json.dumps({
-            "uuid": self.uuid,
-            "workspace": self.workspace,
-            "email": self.email,
-            "token": self.token,
-        })
-
-    def create_membership_queue(workspace_uuid, email, token):
-        memberQueueQuery = WorkspaceMemberQueue.objects.filter(
-            workspace=workspace_uuid,
-            email=email,
-        )
-        if len(memberQueueQuery.values()) != 0: memberQueueQuery.delete()[0]
-
-        membershipQueue = WorkspaceMemberQueue(
-            workspace=Workspace(uuid=workspace_uuid),
-            email=email,
-            token=token
-        )
-        membershipQueue.save()
-        
-        return membershipQueue.uuid
-
-    def set_pending_join(token):
-        memberQueue = WorkspaceMemberQueue.objects.get(token=token)
-        if memberQueue.is_pending_join: raise ClientError("Request is no longer valid")
-
-        memberQueue.is_pending_join = True
-        memberQueue.save(update_fields=["is_pending_join"])
-
-        return True
-
-    def delete_queue(**payload):
-        queueDeleted = WorkspaceMemberQueue.objects.filter(**payload).delete()[0]
-
-        return queueDeleted
+        return workspaceMember.uuid

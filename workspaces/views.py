@@ -1,4 +1,4 @@
-from .models import Workspace, WorkspaceMember, WorkspaceMemberQueue
+from .models import Workspace, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
 from .validators import WorkspaceForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
@@ -144,15 +144,17 @@ class WorkspaceMemberView(WorkspaceView):
 
             user = User.get_user_by_fields(email=authPayload["email"])
             if user == None:
-                WorkspaceMemberQueue.set_pending_join(auth_token)
+                WorkspaceMember.update_member_status(
+                    workspace=authPayload["workspace_uuid"],
+                    email=authPayload["email"],
+                    status=2,
+                )
                 return redirect("http://localhost:3000/register")
 
-            isQueueDeleted = WorkspaceMemberQueue.delete_queue(token=auth_token)
-            if not isQueueDeleted: raise ClientError("Request invalid")
-
-            WorkspaceMember.add_workspace_member(
-                workspace=Workspace(uuid=workspace_uuid),
-                member=User(uuid=user["uuid"]),
+            WorkspaceMember.update_member_status(
+                workspace=authPayload["workspace_uuid"],
+                email=authPayload["email"],
+                status=3,
             )
 
             if not user["is_confirmed"]:
@@ -188,7 +190,8 @@ class WorkspaceMemberView(WorkspaceView):
             if user != None:
                 workspaceMember = WorkspaceMember.get_member_by_fields(
                     workspace=workspace_uuid,
-                    member=User(uuid=user["uuid"])
+                    email=payload["email"],
+                    status=3,
                 )
                 if workspaceMember != None: raise ClientError("User is already the member")
 
@@ -199,10 +202,10 @@ class WorkspaceMemberView(WorkspaceView):
             }
             emailAuthToken = TokenManager.generate_random_token(tokenPayload)
 
-            WorkspaceMemberQueue.create_membership_queue(
-                workspace_uuid=workspace_uuid,
+            WorkspaceMember.add_workspace_member(
+                workspace=Workspace(uuid=workspace_uuid),
                 email=payload["email"],
-                token=emailAuthToken,
+                status=1,
             )
 
             send_invitation_email(payload["email"], emailAuthToken)
