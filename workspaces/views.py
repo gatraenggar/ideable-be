@@ -143,7 +143,9 @@ class WorkspaceMemberView(WorkspaceView):
             authPayload = TokenManager.verify_random_token(auth_token)
 
             user = User.get_user_by_fields(email=authPayload["email"])
-            if user == None: return redirect("http://localhost:3000/register")
+            if user == None:
+                WorkspaceMemberQueue.set_pending_join(auth_token)
+                return redirect("http://localhost:3000/register")
 
             isQueueDeleted = WorkspaceMemberQueue.delete_queue(token=auth_token)
             if not isQueueDeleted: raise ClientError("Request invalid")

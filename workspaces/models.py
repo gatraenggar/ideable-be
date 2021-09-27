@@ -96,7 +96,8 @@ class WorkspaceMemberQueue(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     email = models.EmailField(unique=False, max_length=254)
-    token = models.CharField(max_length=1000)
+    token = models.CharField(max_length=1000, unique=True)
+    is_pending_join = models.BooleanField(default=False)
 
     def __str__(self):
         return json.dumps({
@@ -121,6 +122,15 @@ class WorkspaceMemberQueue(models.Model):
         membershipQueue.save()
         
         return membershipQueue.uuid
+
+    def set_pending_join(token):
+        memberQueue = WorkspaceMemberQueue.objects.get(token=token)
+        if memberQueue.is_pending_join: raise ClientError("Request is no longer valid")
+
+        memberQueue.is_pending_join = True
+        memberQueue.save(update_fields=["is_pending_join"])
+
+        return True
 
     def delete_queue(**payload):
         queueDeleted = WorkspaceMemberQueue.objects.filter(**payload).delete()[0]
