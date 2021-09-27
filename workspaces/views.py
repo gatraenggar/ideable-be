@@ -190,11 +190,6 @@ class WorkspaceMemberView(WorkspaceView):
                 )
                 if workspaceMember != None: raise ClientError("User is already the member")
 
-            WorkspaceMemberQueue.renew_membership_queue(
-                workspace=workspace_uuid,
-                email=payload["email"],
-            )
-
             tokenPayload = {
                 "workspace_uuid": workspace_uuid.hex,
                 "email": payload["email"],
@@ -203,7 +198,7 @@ class WorkspaceMemberView(WorkspaceView):
             emailAuthToken = TokenManager.generate_random_token(tokenPayload)
 
             WorkspaceMemberQueue.create_membership_queue(
-                workspace=Workspace(uuid=workspace_uuid),
+                workspace_uuid=workspace_uuid,
                 email=payload["email"],
                 token=emailAuthToken,
             )

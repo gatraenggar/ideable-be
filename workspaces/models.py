@@ -106,19 +106,21 @@ class WorkspaceMemberQueue(models.Model):
             "token": self.token,
         })
 
-    def create_membership_queue(**payload):
-        membershipQueue = WorkspaceMemberQueue(**payload)
+    def create_membership_queue(workspace_uuid, email, token):
+        memberQueueQuery = WorkspaceMemberQueue.objects.filter(
+            workspace=workspace_uuid,
+            email=email,
+        )
+        if len(memberQueueQuery.values()) != 0: memberQueueQuery.delete()[0]
+
+        membershipQueue = WorkspaceMemberQueue(
+            workspace=Workspace(uuid=workspace_uuid),
+            email=email,
+            token=token
+        )
         membershipQueue.save()
         
         return membershipQueue.uuid
-
-    def renew_membership_queue(**payload):
-        memberQueueQuery = WorkspaceMemberQueue.objects.filter(**payload)
-        if len(memberQueueQuery.values()) != 0:
-            queryDeleted = memberQueueQuery.delete()[0]
-            return queryDeleted
-
-        return None
 
     def delete_queue(**payload):
         queueDeleted = WorkspaceMemberQueue.objects.filter(**payload).delete()[0]
