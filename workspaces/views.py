@@ -1,3 +1,4 @@
+from requests.models import to_native_string
 from .models import Workspace, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
 from .validators import WorkspaceForm, WorkspaceMemberForm
@@ -9,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json, sys, uuid
 
 sys.path.append("..")
-from errors.client_error import AuthenticationError, ClientError, NotFoundError
+from errors.client_error import AuthenticationError, AuthorizationError, ClientError, NotFoundError
 from errors.handler import errorResponse
 from auth.utils.token_manager import TokenManager
 from users.models import User
@@ -125,6 +126,9 @@ class WorkspaceDetailView(WorkspaceView):
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
+            isOwnerTrue = Workspace.verify_owner(workspace_uuid, userUUID)
+            if not isOwnerTrue: raise AuthorizationError("Action is forbidden")
+
             Workspace.delete_workspace(workspace_uuid, userUUID)
 
             return JsonResponse(
@@ -198,7 +202,7 @@ class WorkspaceMemberView(WorkspaceView):
             tokenPayload = {
                 "workspace_uuid": workspace_uuid.hex,
                 "email": payload["email"],
-                "uri": "workspaces/" + str(uuid.UUID(workspace_uuid.hex)) + "/members/",
+                "uri": "workspaces/" + str(uuid.UUID(workspace_uuid.hex)) + "/members/invitation/",
             }
             emailAuthToken = TokenManager.generate_random_token(tokenPayload)
 
@@ -215,6 +219,33 @@ class WorkspaceMemberView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Invitation email has successfully sent to user",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def delete(self, request, workspace_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            payload = json.loads(request.body)
+            isPayloadValid = WorkspaceMemberForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            isOwnerTrue = Workspace.verify_owner(workspace_uuid, userUUID)
+            if not isOwnerTrue: raise AuthorizationError("Action is forbidden")
+
+            WorkspaceMember.remove_member(workspace_uuid, payload["email"])
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Member has succesfully removed",
                 }
             )
         except Exception as e:

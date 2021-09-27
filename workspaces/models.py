@@ -27,6 +27,14 @@ class Workspace(models.Model):
 
         return workspace.uuid        
 
+    def verify_owner(workspace_uuid, user_uuid):
+        workspaceQuery = Workspace.objects.filter(uuid=workspace_uuid)
+
+        workspace = workspaceQuery.values()
+        if not len(workspace): raise NotFoundError("Workspace not found")
+        
+        return True if workspace[0]["owner_id"] == user_uuid else False
+
     def get_workspaces(user_uuid):
         workspaceModel = Workspace.objects.filter(owner=user_uuid).values()
         if len(workspaceModel) < 1: return []
@@ -52,11 +60,7 @@ class Workspace(models.Model):
         workspace.update(name=new_name)
 
     def delete_workspace(workspace_uuid, owner_uuid):
-        workspaceQuery = Workspace.objects.filter(uuid=workspace_uuid)        
-        workspace = workspaceQuery.values()
-        
-        if not len(workspace): raise NotFoundError("Workspace not found")
-        if workspace[0]["owner_id"] != owner_uuid: raise AuthorizationError("Action is forbidden")
+        workspaceQuery = Workspace.objects.filter(uuid=workspace_uuid)
 
         result = workspaceQuery.delete()
 
@@ -103,3 +107,12 @@ class WorkspaceMember(models.Model):
         workspaceMember.save(update_fields=["status"])
 
         return workspaceMember.uuid
+
+    def remove_member(workspace, email):
+        memberQuery = WorkspaceMember.objects.filter(workspace=workspace, email=email)        
+        member = memberQuery.values()
+        if not len(member): raise NotFoundError("Member not found")
+
+        result = memberQuery.delete()
+
+        return result[0]
