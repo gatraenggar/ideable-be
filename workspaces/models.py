@@ -1,3 +1,4 @@
+from django import db
 from .utils.model_mapper import ModelMapper
 from django.db import models
 import json, sys, uuid
@@ -28,9 +29,7 @@ class Workspace(models.Model):
         return workspace.uuid        
 
     def verify_owner(workspace_uuid, user_uuid):
-        workspaceQuery = Workspace.objects.filter(uuid=workspace_uuid)
-
-        workspace = workspaceQuery.values()
+        workspace = Workspace.objects.filter(uuid=workspace_uuid).values()
         if not len(workspace): raise NotFoundError("Workspace not found")
         
         return True if workspace[0]["owner_id"] == user_uuid else False
@@ -116,3 +115,33 @@ class WorkspaceMember(models.Model):
         result = memberQuery.delete()
 
         return result[0]
+
+class Folder(models.Model):
+    class Meta:
+        db_table = '"folders"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=32)
+    workspace_uuid = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+
+    def create_folder(**payload):
+        folder = Folder(**payload)
+        folder.save()
+
+        return folder.uuid
+
+class List(models.Model):
+    class Meta:
+        db_table = '"lists"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=32)
+    folder_uuid = models.ForeignKey(Folder, on_delete=models.CASCADE)
+
+class FolderList(models.Model):
+    class Meta:
+        db_table = '"folder_lists"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    folder_uuid = models.ForeignKey(Folder, on_delete=models.CASCADE)
+    list_uuid = models.ForeignKey(List, on_delete=models.CASCADE)

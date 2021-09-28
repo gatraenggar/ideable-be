@@ -1,7 +1,6 @@
-from requests.models import to_native_string
-from .models import Workspace, WorkspaceMember
+from .models import Folder, Workspace, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
-from .validators import WorkspaceForm, WorkspaceMemberForm
+from .validators import WorkspaceForm, WorkspaceFolderForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -246,6 +245,40 @@ class WorkspaceMemberView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Member has succesfully removed",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class WorkspaceFolderView(WorkspaceView):
+    def post(self, request, workspace_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["workspace_uuid"] = Workspace(uuid=workspace_uuid)
+
+            isPayloadValid = WorkspaceFolderForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            folder_uuid = Folder.create_folder(**payload)
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "Folder has successfully created",
+                    "data": {
+                        "folder_uuid": folder_uuid,
+                    }
                 }
             )
         except Exception as e:

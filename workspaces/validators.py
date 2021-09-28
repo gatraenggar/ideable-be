@@ -1,3 +1,5 @@
+from .models import Workspace
+from django.db.models.fields import UUIDField
 from django.forms import Form, CharField, EmailField
 import sys
 
@@ -10,3 +12,7 @@ class WorkspaceForm(Form):
 
 class WorkspaceMemberForm(Form):
     email = EmailField(max_length=254)
+
+class WorkspaceFolderForm(Form):
+    name = CharField(max_length=32)
+    workspace_uuid = Workspace
