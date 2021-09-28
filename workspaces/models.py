@@ -99,6 +99,10 @@ class WorkspaceMember(models.Model):
 
         return workspaceMember
 
+    def verify_member(workspace, email):
+        workspaceMember = WorkspaceMember.objects.filter(workspace=workspace, email=email).values()
+        return True if len(workspaceMember) and workspaceMember[0]["status"] != 1 else False
+
     def update_member_status(workspace, email, status):
         try:
             workspaceMember = WorkspaceMember.objects.get(workspace=workspace, email=email)
@@ -133,6 +137,18 @@ class Folder(models.Model):
         folder.save()
 
         return folder.uuid
+
+    def get_folders_by_workspace(workspace):
+        folders = Folder.objects.filter(workspace_uuid=workspace).values()
+
+        folderList = []
+        for folder in folders:
+            folderList.append({
+                "uuid": folder["uuid"],
+                "name": folder["name"],
+            })
+        
+        return folderList
 
 class List(models.Model):
     class Meta:

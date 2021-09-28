@@ -51,8 +51,8 @@ class User(models.Model):
 
         return user
 
-    def get_user_model_by_fields(**kwargs):
-        userModel = User.objects.filter(**kwargs).values()
+    def get_user_model_by_fields(**payload):
+        userModel = User.objects.filter(**payload).values()
         if len(userModel) != 1: return None
 
         return userModel[0]
