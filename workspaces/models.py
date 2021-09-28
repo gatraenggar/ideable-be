@@ -1,4 +1,5 @@
 from django import db
+from django.core.checks.messages import Error
 from .utils.model_mapper import ModelMapper
 from django.db import models
 import json, sys, uuid
@@ -99,13 +100,16 @@ class WorkspaceMember(models.Model):
         return workspaceMember
 
     def update_member_status(workspace, email, status):
-        workspaceMember = WorkspaceMember.objects.get(workspace=workspace, email=email)
-        if workspaceMember.status == 3: raise ClientError("Request invalid")
+        try:
+            workspaceMember = WorkspaceMember.objects.get(workspace=workspace, email=email)
+            if workspaceMember.status == 3: raise ClientError("Request invalid")
 
-        workspaceMember.status = status
-        workspaceMember.save(update_fields=["status"])
+            workspaceMember.status = status
+            workspaceMember.save(update_fields=["status"])
 
-        return workspaceMember.uuid
+            return workspaceMember.uuid
+        except Exception as e:
+            if isinstance(e, WorkspaceMember.DoesNotExist): raise ClientError("Invitation expired")
 
     def remove_member(workspace, email):
         memberQuery = WorkspaceMember.objects.filter(workspace=workspace, email=email)        

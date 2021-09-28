@@ -178,9 +178,12 @@ class WorkspaceMemberView(WorkspaceView):
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
 
-            ownerData = TokenManager.verify_access_token(token)
-            owner = User.get_user_by_fields(uuid=ownerData["user_uuid"])
-            if not owner["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             isPayloadValid = WorkspaceMemberForm(payload).is_valid()
