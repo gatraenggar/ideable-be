@@ -154,6 +154,9 @@ class Folder(models.Model):
         updatedfolder = Folder.objects.filter(uuid=folder_uuid).update(name=new_name)
         if updatedfolder == 0: raise ClientError("Folder not found")
 
+    def delete_folder(folder_uuid):
+        return Folder.objects.filter(uuid=folder_uuid).delete()[0]
+
 class List(models.Model):
     class Meta:
         db_table = '"lists"'

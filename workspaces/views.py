@@ -264,18 +264,15 @@ class WorkspaceFolderView(WorkspaceView):
             if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
 
             isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            print("is owner", isWorkspaceOwner)
             if isWorkspaceOwner == False:
                 isWorkspaceMember = WorkspaceMember.verify_member(
                     workspace=Workspace(uuid=workspace_uuid),
                     email=user["email"],
                 )
-                print("is member", isWorkspaceMember)
 
                 if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
 
             folders = Folder.get_folders_by_workspace(Workspace(uuid=workspace_uuid))
-            print("folders")
 
             return JsonResponse(
                 status = 200,
@@ -347,6 +344,30 @@ class WorkspaceFolderDetailView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Workspace has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def delete(self, request, workspace_uuid, folder_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isFolderDeleted = Folder.delete_folder(folder_uuid)
+            if isFolderDeleted == 0: raise ClientError("Folder not found")
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Workspace has successfully deleted",
                 }
             )
         except Exception as e:
