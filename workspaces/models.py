@@ -150,6 +150,10 @@ class Folder(models.Model):
         
         return folderList
 
+    def update_name(folder_uuid, new_name):
+        updatedfolder = Folder.objects.filter(uuid=folder_uuid).update(name=new_name)
+        if updatedfolder == 0: raise ClientError("Folder not found")
+
 class List(models.Model):
     class Meta:
         db_table = '"lists"'

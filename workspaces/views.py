@@ -320,3 +320,34 @@ class WorkspaceFolderView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+class WorkspaceFolderDetailView(WorkspaceView):
+    def put(self, request, workspace_uuid, folder_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["workspace_uuid"] = Workspace(uuid=workspace_uuid)
+
+            isPayloadValid = WorkspaceFolderForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            Folder.update_name(folder_uuid, payload["name"])
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Workspace has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
