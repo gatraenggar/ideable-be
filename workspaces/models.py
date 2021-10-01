@@ -1,4 +1,3 @@
-from django import db
 from django.core.checks.messages import Error
 from .utils.model_mapper import ModelMapper
 from django.db import models
@@ -168,3 +167,43 @@ class WorkspaceContent:
 
     def delete_content(self, content_uuid):
         return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
+
+class Story(models.Model):
+    class Meta:
+        db_table = '"stories"'
+
+    class PriorityChoices(models.IntegerChoices):
+        LOW = 1
+        MEDIUM = 2
+        HIGH = 3
+    
+    class StatusChoices(models.IntegerChoices):
+        TODO = 1
+        IN_PROGRESS = 2
+        IN_REVIEW = 3
+        IN_EVALUATION = 4
+        DONE = 5
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=32, blank=False, null=True)
+    desc = models.CharField(max_length=500, blank=True, null=True)
+    priority = models.IntegerField(choices=PriorityChoices.choices, default=1, null=False)
+    status = models.IntegerField(choices=StatusChoices.choices, default=1, null=False)
+    list_uuid = models.ForeignKey(List, on_delete=models.CASCADE)
+
+class ListContent:
+    def __init__(self, ContentModel) -> None:
+        self.ContentModel = ContentModel
+
+    def create_item(self, **payload):
+        content = self.ContentModel(**payload)
+        content.save()
+
+        return content.uuid
+
+    def get_items_by_parent(): pass
+    def update_name(): pass
+    def update_desc(): pass
+    def update_priority(): pass
+    def update_status(): pass
+    def delete_item(): pass

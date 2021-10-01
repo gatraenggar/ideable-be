@@ -1,6 +1,6 @@
-from .models import Folder, List, Workspace, WorkspaceContent, WorkspaceMember
+from .models import Folder, List, ListContent, Story, Workspace, WorkspaceContent, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
-from .validators import WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
+from .validators import StoryForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -488,6 +488,40 @@ class WorkspaceListDetailView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "List has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class StoryView(WorkspaceView):
+    def post(self, request, workspace_uuid, folder_uuid, list_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["list_uuid"] = List(uuid=list_uuid)
+
+            isPayloadValid = StoryForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            story_uuid = ListContent(Story).create_item(**payload)
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "Story has successfully created",
+                    "data": {
+                        "story_uuid": story_uuid,
+                    }
                 }
             )
         except Exception as e:

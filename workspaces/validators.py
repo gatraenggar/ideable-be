@@ -1,6 +1,5 @@
-from .models import Folder, Workspace
-from django.db.models.fields import UUIDField
-from django.forms import Form, CharField, EmailField
+from .models import Folder, List, Story, Workspace
+from django.forms import Form, CharField, EmailField, ChoiceField
 import sys
 
 sys.path.append("..")
@@ -20,3 +19,10 @@ class WorkspaceFolderForm(Form):
 class WorkspaceListForm(Form):
     name = CharField(max_length=32)
     folder_uuid = Folder
+
+class StoryForm(Form):
+    name = CharField(max_length=32, required=True)
+    desc = CharField(max_length=500, required=False)
+    priority = ChoiceField(choices=Story.PriorityChoices.choices)
+    status = ChoiceField(choices=Story.StatusChoices.choices)
+    list_uuid = List
