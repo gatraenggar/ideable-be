@@ -132,31 +132,6 @@ class Folder(models.Model):
     name = models.CharField(max_length=32)
     workspace_uuid = models.ForeignKey(Workspace, on_delete=models.CASCADE)
 
-    def create_folder(**payload):
-        folder = Folder(**payload)
-        folder.save()
-
-        return folder.uuid
-
-    def get_folders_by_workspace(workspace):
-        folders = Folder.objects.filter(workspace_uuid=workspace).values()
-
-        folderList = []
-        for folder in folders:
-            folderList.append({
-                "uuid": folder["uuid"],
-                "name": folder["name"],
-            })
-        
-        return folderList
-
-    def update_name(folder_uuid, new_name):
-        updatedfolder = Folder.objects.filter(uuid=folder_uuid).update(name=new_name)
-        if updatedfolder == 0: raise ClientError("Folder not found")
-
-    def delete_folder(folder_uuid):
-        return Folder.objects.filter(uuid=folder_uuid).delete()[0]
-
 class List(models.Model):
     class Meta:
         db_table = '"lists"'
@@ -164,6 +139,35 @@ class List(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=32)
     folder_uuid = models.ForeignKey(Folder, on_delete=models.CASCADE)
+
+class WorkspaceContent:
+    def __init__(self, ContentModel) -> None:
+        self.ContentModel = ContentModel
+
+    def create_content(self, **payload):
+        content = self.ContentModel(**payload)
+        content.save()
+
+        return content.uuid
+
+    def get_contents_by_parent(self, **parent_uuid):
+        contents = self.ContentModel.objects.filter(**parent_uuid).values()
+
+        contentList = []
+        for content in contents:
+            contentList.append({
+                "uuid": content["uuid"],
+                "name": content["name"],
+            })
+        
+        return contentList
+
+    def update_name(self, content_uuid, new_name):
+        updatedcontent = self.ContentModel.objects.filter(uuid=content_uuid).update(name=new_name)
+        if updatedcontent == 0: raise ClientError("Folder not found")
+
+    def delete_content(self, content_uuid):
+        return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
 
 class FolderList(models.Model):
     class Meta:

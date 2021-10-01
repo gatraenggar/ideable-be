@@ -1,4 +1,4 @@
-from .models import Folder, Workspace, WorkspaceMember
+from .models import Folder, Workspace, WorkspaceContent, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
 from .validators import WorkspaceForm, WorkspaceFolderForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
@@ -272,7 +272,7 @@ class WorkspaceFolderView(WorkspaceView):
 
                 if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
 
-            folders = Folder.get_folders_by_workspace(Workspace(uuid=workspace_uuid))
+            folders = WorkspaceContent(Folder).get_contents_by_parent(workspace_uuid=Workspace(uuid=workspace_uuid))
 
             return JsonResponse(
                 status = 200,
@@ -303,7 +303,7 @@ class WorkspaceFolderView(WorkspaceView):
             isPayloadValid = WorkspaceFolderForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            folder_uuid = Folder.create_folder(**payload)
+            folder_uuid = WorkspaceContent(Folder).create_content(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -337,7 +337,7 @@ class WorkspaceFolderDetailView(WorkspaceView):
             isPayloadValid = WorkspaceFolderForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            Folder.update_name(folder_uuid, payload["name"])
+            WorkspaceContent(Folder).update_name(folder_uuid, payload["name"])
 
             return JsonResponse(
                 status = 200,
@@ -360,7 +360,7 @@ class WorkspaceFolderDetailView(WorkspaceView):
             if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
             if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
 
-            isFolderDeleted = Folder.delete_folder(folder_uuid)
+            isFolderDeleted = WorkspaceContent(Folder).delete_content(folder_uuid)
             if isFolderDeleted == 0: raise ClientError("Folder not found")
 
             return JsonResponse(
