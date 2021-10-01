@@ -1,6 +1,6 @@
-from .models import Folder, Workspace, WorkspaceContent, WorkspaceMember
+from .models import Folder, List, Workspace, WorkspaceContent, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
-from .validators import WorkspaceForm, WorkspaceFolderForm, WorkspaceMemberForm
+from .validators import WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -343,7 +343,7 @@ class WorkspaceFolderDetailView(WorkspaceView):
                 status = 200,
                 data = {
                     "status": "success",
-                    "message": "Workspace has successfully updated",
+                    "message": "Folder has successfully updated",
                 }
             )
         except Exception as e:
@@ -367,7 +367,127 @@ class WorkspaceFolderDetailView(WorkspaceView):
                 status = 200,
                 data = {
                     "status": "success",
-                    "message": "Workspace has successfully deleted",
+                    "message": "Folder has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class WorkspaceListView(WorkspaceView):
+    def get(self, request, workspace_uuid, folder_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
+            if isWorkspaceOwner == False:
+                isWorkspaceMember = WorkspaceMember.verify_member(
+                    workspace=Workspace(uuid=workspace_uuid),
+                    email=user["email"],
+                )
+
+                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+
+            lists = WorkspaceContent(List).get_contents_by_parent(folder_uuid=Folder(uuid=folder_uuid))
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Success retrieving folder's lists",
+                    "data": lists,
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def post(self, request, workspace_uuid, folder_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["folder_uuid"] = Folder(uuid=folder_uuid)
+
+            isPayloadValid = WorkspaceListForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            list_uuid = WorkspaceContent(List).create_content(**payload)
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "List has successfully created",
+                    "data": {
+                        "list_uuid": list_uuid,
+                    }
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class WorkspaceListDetailView(WorkspaceView):
+    def put(self, request, workspace_uuid, folder_uuid, list_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["folder_uuid"] = Folder(uuid=folder_uuid)
+
+            isPayloadValid = WorkspaceListForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
+
+            WorkspaceContent(List).update_name(list_uuid, payload["name"])
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "List has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def delete(self, request, workspace_uuid, folder_uuid, list_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isListDeleted = WorkspaceContent(List).delete_content(list_uuid)
+            if isListDeleted == 0: raise ClientError("List not found")
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "List has successfully deleted",
                 }
             )
         except Exception as e:

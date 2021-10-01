@@ -168,11 +168,3 @@ class WorkspaceContent:
 
     def delete_content(self, content_uuid):
         return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
-
-class FolderList(models.Model):
-    class Meta:
-        db_table = '"folder_lists"'
-
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    folder_uuid = models.ForeignKey(Folder, on_delete=models.CASCADE)
-    list_uuid = models.ForeignKey(List, on_delete=models.CASCADE)
