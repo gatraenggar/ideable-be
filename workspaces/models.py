@@ -214,6 +214,25 @@ class Task(models.Model):
     status = models.IntegerField(choices=StatusChoices.choices, default=1, null=False)
     story_uuid = models.ForeignKey(Story, on_delete=models.CASCADE)
 
+class TaskAssignee(models.Model):
+    class Meta:
+        db_table = '"task_assignees"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task_uuid = models.ForeignKey(Task, on_delete=models.CASCADE)
+    workspace_member_uuid = models.ForeignKey(WorkspaceMember, on_delete=models.CASCADE)
+
+    def assign_member(task_uuid, workspace_member_uuid):
+        assignee = TaskAssignee(
+            task_uuid=task_uuid,
+            workspace_member_uuid=workspace_member_uuid
+        )
+        assignee.save()
+
+        return assignee.uuid
+
+    def unassign_member(): pass
+
 class ListContent:
     def __init__(self, ContentModel) -> None:
         self.ContentModel = ContentModel

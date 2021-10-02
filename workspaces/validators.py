@@ -1,4 +1,4 @@
-from .models import Folder, List, Story, Task, Workspace
+from .models import Folder, List, Story, Task, Workspace, WorkspaceMember
 from django.forms import Form, CharField, EmailField, ChoiceField
 import sys
 
@@ -75,3 +75,7 @@ class TaskForm(Form):
                 return False
 
         return True
+
+class TaskAssigneeForm(Form):
+    task_uuid = Task
+    member_uuid = WorkspaceMember

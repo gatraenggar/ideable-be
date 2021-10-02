@@ -1,6 +1,6 @@
-from .models import Folder, List, ListContent, Story, Task, Workspace, WorkspaceContent, WorkspaceMember
+from .models import Folder, List, ListContent, Story, Task, TaskAssignee, Workspace, WorkspaceContent, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
-from .validators import StoryForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
+from .validators import StoryForm, TaskAssigneeForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -724,6 +724,49 @@ class TaskDetailView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Task has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class TaskAssigneeView(WorkspaceView):
+    def post(self, request, workspace_uuid, story_uuid, task_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["task_uuid"] = Task(uuid=task_uuid)
+
+            isPayloadValid = TaskAssigneeForm(payload).is_valid()
+            if isPayloadValid == False: raise ClientError("Invalid input")
+
+            member_info = User.get_user_by_fields(uuid=uuid.UUID(payload["workspace_member_uuid"]))
+            if member_info == None: raise ClientError("Member is not found")
+
+            workspace_member = WorkspaceMember.get_member_by_fields(email=member_info["email"])
+            if workspace_member == None: raise ClientError("Member is not valid")
+
+            assignee_uuid = TaskAssignee.assign_member(
+                task_uuid=payload["task_uuid"],
+                workspace_member_uuid=WorkspaceMember(uuid=workspace_member[0]["uuid"]),
+            )
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "Task has succesfully assigned to member",
+                    "data": {
+                        "assignee_uuid": assignee_uuid,
+                    }
                 }
             )
         except Exception as e:
