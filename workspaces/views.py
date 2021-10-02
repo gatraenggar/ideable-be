@@ -704,3 +704,27 @@ class TaskDetailView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+    def delete(self, request, workspace_uuid, story_uuid, task_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isTaskDeleted = ListContent(Task).delete_item(task_uuid)
+            if isTaskDeleted == 0: raise ClientError("Task not found")
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Task has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
