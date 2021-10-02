@@ -559,7 +559,7 @@ class StoryView(WorkspaceView):
             return errorResponse(e)
 
 class StoryDetailView(WorkspaceView):
-    def put(self, request, workspace_uuid, folder_uuid, list_uuid, story_uuid):
+    def patch(self, request, workspace_uuid, folder_uuid, list_uuid, story_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -572,9 +572,10 @@ class StoryDetailView(WorkspaceView):
                 raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
-            if len(payload["name"]) > 32 or len(payload["name"]) <= 0: raise ClientError("Invalid input")
+            isPayloadvalid = StoryForm(payload).is_patch_valid()
+            if isPayloadvalid == False: raise ClientError("Invalid input")
 
-            ListContent(Story).update_name(story_uuid, payload["name"])
+            ListContent(Story).update_fields(story_uuid, **payload)
 
             return JsonResponse(
                 status = 200,
@@ -585,4 +586,3 @@ class StoryDetailView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
-

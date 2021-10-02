@@ -21,8 +21,29 @@ class WorkspaceListForm(Form):
     folder_uuid = Folder
 
 class StoryForm(Form):
-    name = CharField(max_length=32, required=True)
+    name = CharField(min_length=1, max_length=32, required=True)
     desc = CharField(max_length=500, required=False)
     priority = ChoiceField(choices=Story.PriorityChoices.choices)
     status = ChoiceField(choices=Story.StatusChoices.choices)
     list_uuid = List
+
+    def is_patch_valid(story_form):
+        payload = story_form.data
+
+        if "name" in payload:
+            if len(payload["name"]) < 1 or len(payload["name"]) > 32:
+                return False
+        if "desc" in payload:
+            if len(payload["desc"]) < 1 or len(payload["desc"]) > 500:
+                return False
+        if "priority" in payload:
+            if payload["priority"] not in Story.PriorityChoices.values:
+                return False
+        if "status" in payload:
+            if payload["status"] not in Story.StatusChoices.values:
+                return False
+        if "list_uuid" in payload:
+            if not isinstance(payload["list_uuid"], List):
+                return False
+
+        return True
