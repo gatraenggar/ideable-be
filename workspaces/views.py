@@ -675,3 +675,32 @@ class TaskView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+class TaskDetailView(WorkspaceView):
+    def patch(self, request, workspace_uuid, story_uuid, task_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            isPayloadvalid = TaskForm(payload).is_patch_valid()
+            if isPayloadvalid == False: raise ClientError("Invalid input")
+
+            ListContent(Task).update_fields(task_uuid, **payload)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Task has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)

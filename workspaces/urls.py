@@ -15,6 +15,7 @@ urlpatterns = [
     path('workspaces/<uuid:workspace_uuid>/folders/<uuid:folder_uuid>/lists/<uuid:list_uuid>/stories/<uuid:story_uuid>/', views.StoryDetailView.as_view()),
     
     path('workspaces/<uuid:workspace_uuid>/stories/<uuid:story_uuid>/', views.TaskView.as_view()),
+    path('workspaces/<uuid:workspace_uuid>/stories/<uuid:story_uuid>/tasks/<uuid:task_uuid>/', views.TaskDetailView.as_view()),
 
     path('workspaces/<uuid:workspace_uuid>/members/', views.WorkspaceMemberView.as_view()),
     path('workspaces/<uuid:workspace_uuid>/members/invitation/<str:auth_token>', views.WorkspaceMemberView.as_view()),
