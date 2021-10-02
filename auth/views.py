@@ -124,8 +124,8 @@ class OAuthCallbackView(AuthView):
 
             payload = {
                 "email": userInfo["email"],
-                "first_name": userInfo["given_name"],
-                "last_name": userInfo["family_name"],
+                "first_name": userInfo["given_name"] if "given_name" in userInfo else "",
+                "last_name": userInfo["family_name"] if "family_name" in userInfo else "",
                 "is_oauth": True,
             }
 
