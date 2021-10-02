@@ -231,7 +231,8 @@ class TaskAssignee(models.Model):
 
         return assignee.uuid
 
-    def unassign_member(): pass
+    def unassign_member(assignee_uuid):
+        return TaskAssignee.objects.filter(uuid=assignee_uuid).delete()[0]
 
 class ListContent:
     def __init__(self, ContentModel) -> None:

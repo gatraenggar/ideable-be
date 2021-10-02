@@ -771,3 +771,29 @@ class TaskAssigneeView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+    def delete(self, request, workspace_uuid, assignee_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            isUnassignedTask = TaskAssignee.unassign_member(assignee_uuid)
+            if isUnassignedTask == 0: raise ClientError("Assignee not found")
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Member has successfully unassigned from task",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
