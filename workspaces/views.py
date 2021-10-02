@@ -1,6 +1,6 @@
-from .models import Folder, List, ListContent, Story, Task, TaskAssignee, Workspace, WorkspaceContent, WorkspaceMember
+from .models import Folder, List, ListContent, Story, SubTask, Task, TaskAssignee, Workspace, WorkspaceContent, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
-from .validators import StoryForm, TaskAssigneeForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
+from .validators import StoryForm, SubTaskForm, TaskAssigneeForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -830,3 +830,36 @@ class TaskAssigneeView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
+class SubTaskView(WorkspaceView):
+    def post(self, request, workspace_uuid, task_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["task_uuid"] = Task(uuid=task_uuid)
+
+            isPayloadValid = SubTaskForm(payload).is_valid()
+            if isPayloadValid == False: raise ClientError("Invalid input")
+
+            subtask_uuid = SubTask.create_task(**payload)
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "Sub-task has successfully created",
+                    "data": {
+                        "subtask_uuid": subtask_uuid,
+                    }
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)

@@ -1,4 +1,5 @@
 from django.core.checks.messages import Error
+from django.db.models.deletion import CASCADE
 from .utils.model_mapper import ModelMapper
 from django.db import models
 import json, sys, uuid
@@ -277,3 +278,26 @@ class ListContent:
 
     def delete_item(self, content_uuid):
         return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
+
+class SubTask(models.Model):
+    class Meta:
+        db_table = '"subtasks"'
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, blank=False, null=True)
+    is_done = models.BooleanField(default=False, editable=False)
+    task_uuid = models.ForeignKey(Task, on_delete=models.CASCADE)
+    assignee_uuid = models.ForeignKey(TaskAssignee, null=True, on_delete=models.CASCADE)
+
+    def create_task(**payload):
+        subtask = SubTask(**payload)
+        subtask.save()
+
+        return subtask.uuid
+
+    def get_subtasks_by_task(): pass
+    def assign_member(): pass
+    def unassign_member(): pass
+    def update_name(): pass
+    def set_is_done(): pass
+    def delete_task(): pass
