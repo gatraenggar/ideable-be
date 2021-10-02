@@ -557,3 +557,32 @@ class StoryView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+class StoryDetailView(WorkspaceView):
+    def put(self, request, workspace_uuid, folder_uuid, list_uuid, story_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            if len(payload["name"]) > 32 or len(payload["name"]) <= 0: raise ClientError("Invalid input")
+
+            ListContent(Story).update_name(story_uuid, payload["name"])
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Story has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+

@@ -216,7 +216,10 @@ class ListContent:
         
         return contentList
 
-    def update_name(): pass
+    def update_name(self, content_uuid, new_name):
+        updatedcontent = self.ContentModel.objects.filter(uuid=content_uuid).update(name=new_name)
+        if updatedcontent == 0: raise ClientError("Story not found")
+
     def update_desc(): pass
     def update_priority(): pass
     def update_status(): pass
