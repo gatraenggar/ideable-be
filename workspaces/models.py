@@ -220,4 +220,5 @@ class ListContent:
         updatedcontent = self.ContentModel.objects.filter(uuid=content_uuid).update(**payload)
         if updatedcontent == 0: raise ClientError("Story not found")
 
-    def delete_item(): pass
+    def delete_item(self, content_uuid):
+        return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]

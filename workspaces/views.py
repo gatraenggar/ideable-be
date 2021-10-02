@@ -586,3 +586,27 @@ class StoryDetailView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+    def delete(self, request, workspace_uuid, folder_uuid, list_uuid, story_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isStoryDeleted = ListContent(Story).delete_item(story_uuid)
+            if isStoryDeleted == 0: raise ClientError("Story not found")
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Story has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
