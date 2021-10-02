@@ -185,11 +185,34 @@ class Story(models.Model):
         DONE = 5
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=32, blank=False, null=True)
+    name = models.CharField(max_length=50, blank=False, null=True)
     desc = models.CharField(max_length=500, blank=True, null=True)
     priority = models.IntegerField(choices=PriorityChoices.choices, default=1, null=False)
     status = models.IntegerField(choices=StatusChoices.choices, default=1, null=False)
     list_uuid = models.ForeignKey(List, on_delete=models.CASCADE)
+
+class Task(models.Model):
+    class Meta:
+        db_table = '"tasks"'
+
+    class PriorityChoices(models.IntegerChoices):
+        LOW = 1
+        MEDIUM = 2
+        HIGH = 3
+    
+    class StatusChoices(models.IntegerChoices):
+        TODO = 1
+        IN_PROGRESS = 2
+        IN_REVIEW = 3
+        IN_EVALUATION = 4
+        DONE = 5
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, blank=False, null=True)
+    desc = models.CharField(max_length=500, blank=True, null=True)
+    priority = models.IntegerField(choices=PriorityChoices.choices, default=1, null=False)
+    status = models.IntegerField(choices=StatusChoices.choices, default=1, null=False)
+    story_uuid = models.ForeignKey(Story, on_delete=models.CASCADE)
 
 class ListContent:
     def __init__(self, ContentModel) -> None:

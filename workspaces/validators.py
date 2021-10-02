@@ -1,4 +1,4 @@
-from .models import Folder, List, Story, Workspace
+from .models import Folder, List, Story, Task, Workspace
 from django.forms import Form, CharField, EmailField, ChoiceField
 import sys
 
@@ -21,7 +21,7 @@ class WorkspaceListForm(Form):
     folder_uuid = Folder
 
 class StoryForm(Form):
-    name = CharField(min_length=1, max_length=32, required=True)
+    name = CharField(min_length=1, max_length=50, required=True)
     desc = CharField(max_length=500, required=False)
     priority = ChoiceField(choices=Story.PriorityChoices.choices)
     status = ChoiceField(choices=Story.StatusChoices.choices)
@@ -31,7 +31,7 @@ class StoryForm(Form):
         payload = story_form.data
 
         if "name" in payload:
-            if len(payload["name"]) < 1 or len(payload["name"]) > 32:
+            if len(payload["name"]) < 1 or len(payload["name"]) > 50:
                 return False
         if "desc" in payload:
             if len(payload["desc"]) < 1 or len(payload["desc"]) > 500:
@@ -44,6 +44,34 @@ class StoryForm(Form):
                 return False
         if "list_uuid" in payload:
             if not isinstance(payload["list_uuid"], List):
+                return False
+
+        return True
+
+class TaskForm(Form):
+    name = CharField(min_length=1, max_length=50, required=True)
+    desc = CharField(max_length=500, required=False)
+    priority = ChoiceField(choices=Task.PriorityChoices.choices)
+    status = ChoiceField(choices=Task.StatusChoices.choices)
+    story_uuid = Story
+
+    def is_patch_valid(task_form):
+        payload = task_form.data
+
+        if "name" in payload:
+            if len(payload["name"]) < 1 or len(payload["name"]) > 50:
+                return False
+        if "desc" in payload:
+            if len(payload["desc"]) < 1 or len(payload["desc"]) > 500:
+                return False
+        if "priority" in payload:
+            if payload["priority"] not in Task.PriorityChoices.values:
+                return False
+        if "status" in payload:
+            if payload["status"] not in Task.StatusChoices.values:
+                return False
+        if "story_uuid" in payload:
+            if not isinstance(payload["story_uuid"], Story):
                 return False
 
         return True

@@ -1,6 +1,6 @@
-from .models import Folder, List, ListContent, Story, Workspace, WorkspaceContent, WorkspaceMember
+from .models import Folder, List, ListContent, Story, Task, Workspace, WorkspaceContent, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
-from .validators import StoryForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
+from .validators import StoryForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -606,6 +606,40 @@ class StoryDetailView(WorkspaceView):
                 data = {
                     "status": "success",
                     "message": "Story has successfully deleted",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class TaskView(WorkspaceView):
+    def post(self, request, workspace_uuid, story_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
+                raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            payload["story_uuid"] = Story(uuid=story_uuid)
+
+            isPayloadValid = TaskForm(payload).is_valid()
+            if isPayloadValid == False: raise ClientError("Invalid input")
+
+            task_uuid = ListContent(Task).create_item(**payload)
+
+            return JsonResponse(
+                status = 201,
+                data = {
+                    "status": "success",
+                    "message": "Task has successfully created",
+                    "data": {
+                        "task_uuid": task_uuid,
+                    }
                 }
             )
         except Exception as e:
