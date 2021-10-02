@@ -772,6 +772,39 @@ class TaskAssigneeView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
+    def get(self, request, workspace_uuid, story_uuid, task_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
+            if isWorkspaceOwner == False:
+                isWorkspaceMember = WorkspaceMember.verify_member(
+                    workspace=Workspace(uuid=workspace_uuid),
+                    email=user["email"],
+                )
+
+                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+
+            assignees = TaskAssignee.get_assignees_by_task(task_uuid)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Task has succesfully assigned to member",
+                    "data": {
+                        "assignees": assignees,
+                    }
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
     def delete(self, request, workspace_uuid, assignee_uuid):
         try:
             bearerToken = request.headers["Authorization"]

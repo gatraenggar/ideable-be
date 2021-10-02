@@ -231,6 +231,18 @@ class TaskAssignee(models.Model):
 
         return assignee.uuid
 
+    def get_assignees_by_task(task_uuid):
+        assignees = TaskAssignee.objects.filter(task_uuid=task_uuid).values()
+
+        assigneesList = []
+        for assignee in assignees:
+            assigneesList.append({
+                "uuid": assignee["uuid"],
+                "workspace_member_uuid": assignee["workspace_member_uuid_id"],
+            })
+        
+        return assigneesList
+
     def unassign_member(assignee_uuid):
         return TaskAssignee.objects.filter(uuid=assignee_uuid).delete()[0]
 
