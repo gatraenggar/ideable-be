@@ -201,7 +201,21 @@ class ListContent:
 
         return content.uuid
 
-    def get_items_by_parent(): pass
+    def get_items_by_parent(self, **parent_uuid):
+        contents = self.ContentModel.objects.filter(**parent_uuid).values()
+
+        contentList = []
+        for content in contents:
+            contentList.append({
+                "uuid": content["uuid"],
+                "name": content["name"],
+                "desc": content["desc"],
+                "priority": content["priority"],
+                "status": content["status"],
+            })
+        
+        return contentList
+
     def update_name(): pass
     def update_desc(): pass
     def update_priority(): pass
