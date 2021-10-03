@@ -295,7 +295,20 @@ class SubTask(models.Model):
 
         return subtask.uuid
 
-    def get_subtasks_by_task(): pass
+    def get_subtasks_by_task(task_uuid):
+        subtasks = SubTask.objects.filter(task_uuid=task_uuid).values()
+
+        subtaskList = []
+        for subtask in subtasks:
+            subtaskList.append({
+                "uuid": subtask["uuid"],
+                "name": subtask["name"],
+                "is_done": subtask["is_done"],
+                "assignee_uuid": subtask["assignee_uuid_id"],
+            })
+        
+        return subtaskList
+
     def assign_member(): pass
     def unassign_member(): pass
     def update_name(): pass

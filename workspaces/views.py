@@ -831,6 +831,39 @@ class TaskAssigneeView(WorkspaceView):
             return errorResponse(e)
 
 class SubTaskView(WorkspaceView):
+    def get(self, request, workspace_uuid, task_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
+            if isWorkspaceOwner == False:
+                isWorkspaceMember = WorkspaceMember.verify_member(
+                    workspace=Workspace(uuid=workspace_uuid),
+                    email=user["email"],
+                )
+
+                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+
+            subtasks = SubTask.get_subtasks_by_task(task_uuid)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Sub-tasks has succesfully retrieved",
+                    "data": {
+                        "subtasks": subtasks,
+                    }
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
     def post(self, request, workspace_uuid, task_uuid):
         try:
             bearerToken = request.headers["Authorization"]
