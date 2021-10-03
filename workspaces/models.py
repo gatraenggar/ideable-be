@@ -313,4 +313,5 @@ class SubTask(models.Model):
         update_subtask = SubTask.objects.filter(uuid=subtask_uuid).update(**payload)
         if update_subtask == 0: raise ClientError("Subtask not found")
 
-    def delete_task(): pass
+    def delete_subtask(subtask_uuid):
+        return SubTask.objects.filter(uuid=subtask_uuid).delete()[0]
