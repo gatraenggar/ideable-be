@@ -273,8 +273,8 @@ class ListContent:
         return contentList
 
     def update_fields(self, content_uuid, **payload):
-        updatedcontent = self.ContentModel.objects.filter(uuid=content_uuid).update(**payload)
-        if updatedcontent == 0: raise ClientError("Story not found")
+        updated_content = self.ContentModel.objects.filter(uuid=content_uuid).update(**payload)
+        if updated_content == 0: raise ClientError("Story not found")
 
     def delete_item(self, content_uuid):
         return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
@@ -309,8 +309,8 @@ class SubTask(models.Model):
         
         return subtaskList
 
-    def assign_member(): pass
-    def unassign_member(): pass
-    def update_name(): pass
-    def set_is_done(): pass
+    def update_fields(subtask_uuid, **payload):
+        update_subtask = SubTask.objects.filter(uuid=subtask_uuid).update(**payload)
+        if update_subtask == 0: raise ClientError("Subtask not found")
+
     def delete_task(): pass

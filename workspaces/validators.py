@@ -84,3 +84,19 @@ class SubTaskForm(Form):
     name = CharField(min_length=1, max_length=50, required=True)
     task_uuid = Task
     assignee_uuid = TaskAssignee
+
+    def is_patch_valid(subtask_form):
+        payload = subtask_form.data
+
+        if "name" in payload:
+            if len(payload["name"]) < 1 or len(payload["name"]) > 50:
+                return False
+        if "is_done" in payload:
+            if isinstance(payload["is_done"], bool) == False:
+                return False
+        if "assignee_uuid" in payload:
+            if not isinstance(payload["assignee_uuid"], TaskAssignee) and payload["assignee_uuid"] != None:
+                return False
+
+        return True
+

@@ -24,4 +24,5 @@ urlpatterns = [
     path('workspaces/<uuid:workspace_uuid>/assignees/<uuid:assignee_uuid>/', views.TaskAssigneeView.as_view()),
 
     path('workspaces/<uuid:workspace_uuid>/tasks/<uuid:task_uuid>/subtasks/', views.SubTaskView.as_view()),
+    path('workspaces/<uuid:workspace_uuid>/subtasks/<uuid:subtask_uuid>/', views.SubTaskDetailView.as_view()),
 ]

@@ -896,3 +896,41 @@ class SubTaskView(WorkspaceView):
             )
         except Exception as e:
             return errorResponse(e)
+
+class SubTaskDetailView(WorkspaceView):
+    def patch(self, request, workspace_uuid, subtask_uuid):
+        try:
+            bearerToken = request.headers["Authorization"]
+            token = bearerToken.replace("Bearer ", "")
+
+            userData = TokenManager.verify_access_token(token)
+            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
+            if isWorkspaceOwner == False:
+                isWorkspaceMember = WorkspaceMember.verify_member(
+                    workspace=Workspace(uuid=workspace_uuid),
+                    email=user["email"],
+                )
+
+                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+
+            payload = json.loads(request.body)
+            if "assignee_uuid" in payload and payload["assignee_uuid"] != None:
+                payload["assignee_uuid"] = TaskAssignee(uuid=payload["assignee_uuid"])
+
+            isPayloadvalid = SubTaskForm(payload).is_patch_valid()
+            if isPayloadvalid == False: raise ClientError("Invalid input")
+
+            SubTask.update_fields(subtask_uuid, **payload)
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Sub-task has successfully updated",
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
