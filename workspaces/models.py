@@ -163,8 +163,8 @@ class WorkspaceContent:
         return contentList
 
     def update_name(self, content_uuid, new_name):
-        updatedcontent = self.ContentModel.objects.filter(uuid=content_uuid).update(name=new_name)
-        if updatedcontent == 0: raise ClientError("Folder not found")
+        updated = self.ContentModel.objects.filter(uuid=content_uuid).update(name=new_name)
+        if updated == 0: raise ClientError("Folder not found")
 
     def delete_content(self, content_uuid):
         return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
@@ -273,8 +273,8 @@ class ListContent:
         return contentList
 
     def update_fields(self, content_uuid, **payload):
-        updated_content = self.ContentModel.objects.filter(uuid=content_uuid).update(**payload)
-        if updated_content == 0: raise ClientError("Story not found")
+        updated = self.ContentModel.objects.filter(uuid=content_uuid).update(**payload)
+        if updated == 0: raise ClientError("Story not found")
 
     def delete_item(self, content_uuid):
         return self.ContentModel.objects.filter(uuid=content_uuid).delete()[0]
@@ -310,8 +310,8 @@ class SubTask(models.Model):
         return subtaskList
 
     def update_fields(subtask_uuid, **payload):
-        update_subtask = SubTask.objects.filter(uuid=subtask_uuid).update(**payload)
-        if update_subtask == 0: raise ClientError("Subtask not found")
+        updated = SubTask.objects.filter(uuid=subtask_uuid).update(**payload)
+        if updated == 0: raise ClientError("Subtask not found")
 
     def delete_subtask(subtask_uuid):
         return SubTask.objects.filter(uuid=subtask_uuid).delete()[0]

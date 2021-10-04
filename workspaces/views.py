@@ -303,7 +303,7 @@ class WorkspaceFolderView(WorkspaceView):
             isPayloadValid = WorkspaceFolderForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            folder_uuid = WorkspaceContent(Folder).create_content(**payload)
+            folderUUID = WorkspaceContent(Folder).create_content(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -311,7 +311,7 @@ class WorkspaceFolderView(WorkspaceView):
                     "status": "success",
                     "message": "Folder has successfully created",
                     "data": {
-                        "folder_uuid": folder_uuid,
+                        "folder_uuid": folderUUID,
                     }
                 }
             )
@@ -423,7 +423,7 @@ class WorkspaceListView(WorkspaceView):
             isPayloadValid = WorkspaceListForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            list_uuid = WorkspaceContent(List).create_content(**payload)
+            listUUID = WorkspaceContent(List).create_content(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -431,7 +431,7 @@ class WorkspaceListView(WorkspaceView):
                     "status": "success",
                     "message": "List has successfully created",
                     "data": {
-                        "list_uuid": list_uuid,
+                        "list_uuid": listUUID,
                     }
                 }
             )
@@ -543,7 +543,7 @@ class StoryView(WorkspaceView):
             isPayloadValid = StoryForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            story_uuid = ListContent(Story).create_item(**payload)
+            storyUUID = ListContent(Story).create_item(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -551,7 +551,7 @@ class StoryView(WorkspaceView):
                     "status": "success",
                     "message": "Story has successfully created",
                     "data": {
-                        "story_uuid": story_uuid,
+                        "story_uuid": storyUUID,
                     }
                 }
             )
@@ -661,7 +661,7 @@ class TaskView(WorkspaceView):
             isPayloadValid = TaskForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            task_uuid = ListContent(Task).create_item(**payload)
+            taskUUID = ListContent(Task).create_item(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -669,7 +669,7 @@ class TaskView(WorkspaceView):
                     "status": "success",
                     "message": "Task has successfully created",
                     "data": {
-                        "task_uuid": task_uuid,
+                        "task_uuid": taskUUID,
                     }
                 }
             )
@@ -748,13 +748,13 @@ class TaskAssigneeView(WorkspaceView):
             isPayloadValid = TaskAssigneeForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            member_info = User.get_user_by_fields(uuid=uuid.UUID(payload["workspace_member_uuid"]))
-            if member_info == None: raise ClientError("Member is not found")
+            memberInfo = User.get_user_by_fields(uuid=uuid.UUID(payload["workspace_member_uuid"]))
+            if memberInfo == None: raise ClientError("Member is not found")
 
-            workspace_member = WorkspaceMember.get_member_by_fields(email=member_info["email"])
+            workspace_member = WorkspaceMember.get_member_by_fields(email=memberInfo["email"])
             if workspace_member == None: raise ClientError("Member is not valid")
 
-            assignee_uuid = TaskAssignee.assign_member(
+            assigneeUUID = TaskAssignee.assign_member(
                 task_uuid=payload["task_uuid"],
                 workspace_member_uuid=WorkspaceMember(uuid=workspace_member[0]["uuid"]),
             )
@@ -765,7 +765,7 @@ class TaskAssigneeView(WorkspaceView):
                     "status": "success",
                     "message": "Task has succesfully assigned to member",
                     "data": {
-                        "assignee_uuid": assignee_uuid,
+                        "assignee_uuid": assigneeUUID,
                     }
                 }
             )
@@ -882,7 +882,7 @@ class SubTaskView(WorkspaceView):
             isPayloadValid = SubTaskForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            subtask_uuid = SubTask.create_task(**payload)
+            subtaskUUID = SubTask.create_task(**payload)
 
             return JsonResponse(
                 status = 201,
@@ -890,7 +890,7 @@ class SubTaskView(WorkspaceView):
                     "status": "success",
                     "message": "Sub-task has successfully created",
                     "data": {
-                        "subtask_uuid": subtask_uuid,
+                        "subtask_uuid": subtaskUUID,
                     }
                 }
             )
