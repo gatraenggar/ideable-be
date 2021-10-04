@@ -1,4 +1,4 @@
-from .models import Folder, List, ListContent, Story, SubTask, Task, TaskAssignee, Workspace, WorkspaceContent, WorkspaceMember
+from .models import Folder, List, Story, SubTask, Task, TaskAssignee, Workspace, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
 from .validators import StoryForm, SubTaskForm, TaskAssigneeForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
 from django.http.response import JsonResponse
@@ -23,17 +23,25 @@ class WorkspaceView(generic.ListView):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
+            
             userData = TokenManager.verify_access_token(token)
-
             userUUID = uuid.UUID(userData["user_uuid"])
-            workspaces = Workspace.get_workspaces(userUUID)
+
+            workspaces = Workspace.objects.filter(owner=userUUID).values("uuid", "name")
+
+            workspaceList = []
+            for workspace in workspaces:
+                workspaceList.append({
+                    "uuid": workspace["uuid"],
+                    "name": workspace["name"],
+                })
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Get user's workspaces",
-                    "data": workspaces,
+                    "data": workspaceList,
                 }
             )
         except Exception as e:
@@ -43,10 +51,12 @@ class WorkspaceView(generic.ListView):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
-            userData = TokenManager.verify_access_token(token)
 
-            user = User.get_user_by_fields(uuid=uuid.UUID(userData["user_uuid"]))
-            if user == None or not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            user = User.objects.filter(uuid=userUUID).values("uuid")
+            if not len(user): raise AuthenticationError("User is not authenticated")
 
             payload = json.loads(request.body)
             payload["owner"] = User(uuid=user["uuid"])
@@ -54,7 +64,8 @@ class WorkspaceView(generic.ListView):
             isPayloadValid = WorkspaceForm(payload).is_valid()
             if not isPayloadValid: return ClientError("Invalid input")
 
-            workspaceUUID = Workspace.create_workspace(**payload)
+            workspace = Workspace(**payload)
+            workspace.save()
 
             return JsonResponse(
                 status = 201,
@@ -62,7 +73,7 @@ class WorkspaceView(generic.ListView):
                     "status": "success",
                     "message": "Workspace has successfully created",
                     "data": {
-                        "workspace_uuid": workspaceUUID
+                        "workspace_uuid": workspace.uuid
                     }
                 }
             )
@@ -74,18 +85,19 @@ class WorkspaceDetailView(WorkspaceView):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
-            userData = TokenManager.verify_access_token(token)
 
+            userData = TokenManager.verify_access_token(token)
             ownerUUID = uuid.UUID(userData["user_uuid"])
-            workspace = Workspace.get_workspace_by_fields(uuid=workspace_uuid, owner=ownerUUID)
-            if workspace == None: raise NotFoundError("Workspace not found")
+            
+            workspace = Workspace.objects.filter(uuid=workspace_uuid, owner=ownerUUID).values("uuid", "name")
+            if not len(workspace): raise NotFoundError("Workspace not found")
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Get user's workspace by ID",
-                    "data": workspace,
+                    "data": workspace[0],
                 }
             )
         except Exception as e:
@@ -98,6 +110,10 @@ class WorkspaceDetailView(WorkspaceView):
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
+            
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["owner"] = userUUID
@@ -105,7 +121,8 @@ class WorkspaceDetailView(WorkspaceView):
             isPayloadValid = WorkspaceForm(payload).is_valid()
             if not isPayloadValid: return ClientError("Invalid input")
 
-            Workspace.update_name(workspace_uuid, payload["name"], payload["owner"])
+            updated = Workspace.objects.filter(uuid=workspace_uuid).update(name=payload["name"])
+            if updated == 0: raise ClientError("Workspace not found")
 
             return JsonResponse(
                 status = 200,
@@ -125,10 +142,12 @@ class WorkspaceDetailView(WorkspaceView):
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
-            isOwnerTrue = Workspace.verify_owner(workspace_uuid, userUUID)
-            if not isOwnerTrue: raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-            Workspace.delete_workspace(workspace_uuid, userUUID)
+            isWorkspaceDeleted = Workspace.objects.filter(uuid=workspace_uuid).delete()[0]
+            if isWorkspaceDeleted == 0: raise NotFoundError("Workspace not found")
 
             return JsonResponse(
                 status = 200,
@@ -145,19 +164,26 @@ class WorkspaceMemberView(WorkspaceView):
         try:
             authPayload = TokenManager.verify_random_token(auth_token)
 
-            user = User.get_user_by_fields(email=authPayload["email"])
-            if user == None:
-                WorkspaceMember.update_member_status(
-                    workspace=authPayload["workspace_uuid"],
-                    email=authPayload["email"],
-                    status=2,
-                )
-                return redirect("http://localhost:3000/register")
+            user = User.objects.filter(email=authPayload["email"]).values("uuid", "is_confirmed")
+            if not len(user):
+                try:
+                    workspaceMember = WorkspaceMember.objects.get(
+                        workspace=authPayload["workspace_uuid"],
+                        email=authPayload["email"],
+                    )
+                    if workspaceMember.status == WorkspaceMember.MemberStatus.JOINED: raise ClientError("Request invalid")
+
+                    workspaceMember.status = WorkspaceMember.MemberStatus.PENDING
+                    workspaceMember.save(update_fields=["status"])
+                    
+                    return redirect("http://localhost:3000/register")
+                except Exception as e:
+                    if isinstance(e, WorkspaceMember.DoesNotExist): raise ClientError("Invitation expired")
 
             WorkspaceMember.update_member_status(
                 workspace=authPayload["workspace_uuid"],
                 email=authPayload["email"],
-                status=3,
+                status=WorkspaceMember.MemberStatus.JOINED,
             )
 
             if not user["is_confirmed"]:
@@ -179,27 +205,27 @@ class WorkspaceMemberView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            user = User.objects.filter(uuid=userUUID).values("uuid", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid, owner=user[0]["uuid"]).values("uuid")
+            if not len(workspace): raise NotFoundError("Workspace not found")
 
             payload = json.loads(request.body)
             isPayloadValid = WorkspaceMemberForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            workspace = Workspace.get_workspace_by_fields(uuid=workspace_uuid)
-            if workspace == None: raise ClientError("Workspace not found")
-
-            user = User.get_user_by_fields(email=payload["email"])
-            if user != None:
-                workspaceMember = WorkspaceMember.get_member_by_fields(
+            user = User.objects.filter(email=payload["email"]).values("uuid")
+            if len(user):
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=workspace_uuid,
                     email=payload["email"],
                     status=3,
-                )
-                if workspaceMember != None: raise ClientError("User is already the member")
+                ).values("uuid")
+                if len(workspaceMember): raise ClientError("User is already the member")
 
             tokenPayload = {
                 "workspace_uuid": workspace_uuid.hex,
@@ -208,11 +234,12 @@ class WorkspaceMemberView(WorkspaceView):
             }
             emailAuthToken = TokenManager.generate_random_token(tokenPayload)
 
-            WorkspaceMember.add_workspace_member(
+            workspaceMember = WorkspaceMember(
                 workspace=Workspace(uuid=workspace_uuid),
                 email=payload["email"],
                 status=1,
             )
+            workspaceMember.save()
 
             send_invitation_email(payload["email"], emailAuthToken)
 
@@ -238,10 +265,15 @@ class WorkspaceMemberView(WorkspaceView):
             isPayloadValid = WorkspaceMemberForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            isOwnerTrue = Workspace.verify_owner(workspace_uuid, userUUID)
-            if not isOwnerTrue: raise AuthorizationError("Action is forbidden")
+            user = User.objects.filter(uuid=userUUID).values("uuid", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")
 
-            WorkspaceMember.remove_member(workspace_uuid, payload["email"])
+            workspace = Workspace.objects.filter(uuid=workspace_uuid, owner=userUUID).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+
+            isMemberDeleted = WorkspaceMember.objects.filter(workspace=workspace_uuid, email=payload["email"]).delete()[0]
+            if isMemberDeleted == 0: raise NotFoundError("Member not found")
 
             return JsonResponse(
                 status = 200,
@@ -260,26 +292,38 @@ class WorkspaceFolderView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
 
-            folders = WorkspaceContent(Folder).get_contents_by_parent(workspace_uuid=Workspace(uuid=workspace_uuid))
+            folders = Folder.objects.filter(workspace_uuid=Workspace(uuid=workspace_uuid)).values("uuid", "name")
+
+            folderList = []
+            for folder in folders:
+                folderList.append({
+                    "uuid": folder["uuid"],
+                    "name": folder["name"],
+                })
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Success retrieving workspace's folder",
-                    "data": folders,
+                    "data": folderList,
                 }
             )
         except Exception as e:
@@ -291,11 +335,11 @@ class WorkspaceFolderView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["workspace_uuid"] = Workspace(uuid=workspace_uuid)
@@ -303,7 +347,8 @@ class WorkspaceFolderView(WorkspaceView):
             isPayloadValid = WorkspaceFolderForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            folderUUID = WorkspaceContent(Folder).create_content(**payload)
+            folder = Folder(**payload)
+            folder.save()
 
             return JsonResponse(
                 status = 201,
@@ -311,7 +356,7 @@ class WorkspaceFolderView(WorkspaceView):
                     "status": "success",
                     "message": "Folder has successfully created",
                     "data": {
-                        "folder_uuid": folderUUID,
+                        "folder_uuid": folder.uuid,
                     }
                 }
             )
@@ -325,19 +370,20 @@ class WorkspaceFolderDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["workspace_uuid"] = Workspace(uuid=workspace_uuid)
 
             isPayloadValid = WorkspaceFolderForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
-
-            WorkspaceContent(Folder).update_name(folder_uuid, payload["name"])
+ 
+            updated = Folder.objects.filter(uuid=folder_uuid).update(name=payload["name"])
+            if updated == 0: raise ClientError("Folder not found")
 
             return JsonResponse(
                 status = 200,
@@ -355,12 +401,13 @@ class WorkspaceFolderDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-            isFolderDeleted = WorkspaceContent(Folder).delete_content(folder_uuid)
+            isFolderDeleted = Folder.objects.filter(uuid=folder_uuid).delete()[0]
             if isFolderDeleted == 0: raise ClientError("Folder not found")
 
             return JsonResponse(
@@ -380,26 +427,38 @@ class WorkspaceListView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
 
-            lists = WorkspaceContent(List).get_contents_by_parent(folder_uuid=Folder(uuid=folder_uuid))
+            lists = List.objects.filter(folder_uuid=Folder(uuid=folder_uuid)).values()
+
+            listList = []
+            for listObj in lists:
+                listList.append({
+                    "uuid": listObj["uuid"],
+                    "name": listObj["name"],
+                })
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Success retrieving folder's lists",
-                    "data": lists,
+                    "data": listList,
                 }
             )
         except Exception as e:
@@ -411,11 +470,11 @@ class WorkspaceListView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["folder_uuid"] = Folder(uuid=folder_uuid)
@@ -423,7 +482,8 @@ class WorkspaceListView(WorkspaceView):
             isPayloadValid = WorkspaceListForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            listUUID = WorkspaceContent(List).create_content(**payload)
+            workspaceList = List(**payload)
+            workspaceList.save()
 
             return JsonResponse(
                 status = 201,
@@ -431,7 +491,7 @@ class WorkspaceListView(WorkspaceView):
                     "status": "success",
                     "message": "List has successfully created",
                     "data": {
-                        "list_uuid": listUUID,
+                        "list_uuid": workspaceList.uuid,
                     }
                 }
             )
@@ -445,11 +505,14 @@ class WorkspaceListDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            user = User.objects.filter(uuid=userUUID).values("uuid")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != user[0]["uuid"]: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["folder_uuid"] = Folder(uuid=folder_uuid)
@@ -457,7 +520,8 @@ class WorkspaceListDetailView(WorkspaceView):
             isPayloadValid = WorkspaceListForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            WorkspaceContent(List).update_name(list_uuid, payload["name"])
+            updated = List.objects.filter(uuid=list_uuid).update(name=payload["name"])
+            if updated == 0: raise ClientError("Folder not found")
 
             return JsonResponse(
                 status = 200,
@@ -475,12 +539,16 @@ class WorkspaceListDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            user = User.objects.filter(uuid=userUUID).values("uuid")
+            if not len(user): raise AuthenticationError("User is not authenticated")
 
-            isListDeleted = WorkspaceContent(List).delete_content(list_uuid)
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != user[0]["uuid"]: raise AuthorizationError("Action is forbidden")
+
+            isListDeleted = List.objects.filter(uuid=list_uuid).delete()[0]
             if isListDeleted == 0: raise ClientError("List not found")
 
             return JsonResponse(
@@ -500,26 +568,43 @@ class StoryView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
 
-            stories = ListContent(Story).get_items_by_parent(list_uuid=List(uuid=list_uuid))
+            stories = Story.objects.filter(
+                list_uuid=List(uuid=list_uuid)
+            ).values("uuid", "name", "desc", "priority", "status")
+
+            storyList = []
+            for story in stories:
+                storyList.append({
+                    "uuid": story["uuid"],
+                    "name": story["name"],
+                    "desc": story["desc"],
+                    "priority": story["priority"],
+                    "status": story["status"],
+                })
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Success retrieving list's stories",
-                    "data": stories,
+                    "data": storyList,
                 }
             )
         except Exception as e:
@@ -531,11 +616,11 @@ class StoryView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["list_uuid"] = List(uuid=list_uuid)
@@ -543,7 +628,8 @@ class StoryView(WorkspaceView):
             isPayloadValid = StoryForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            storyUUID = ListContent(Story).create_item(**payload)
+            story = Story(**payload)
+            story.save()
 
             return JsonResponse(
                 status = 201,
@@ -551,7 +637,7 @@ class StoryView(WorkspaceView):
                     "status": "success",
                     "message": "Story has successfully created",
                     "data": {
-                        "story_uuid": storyUUID,
+                        "story_uuid": story.uuid,
                     }
                 }
             )
@@ -565,17 +651,18 @@ class StoryDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             isPayloadvalid = StoryForm(payload).is_patch_valid()
             if isPayloadvalid == False: raise ClientError("Invalid input")
 
-            ListContent(Story).update_fields(story_uuid, **payload)
+            updated = Story.objects.filter(uuid=story_uuid).update(**payload)
+            if updated == 0: raise ClientError("Story not found")
 
             return JsonResponse(
                 status = 200,
@@ -593,12 +680,13 @@ class StoryDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-            isStoryDeleted = ListContent(Story).delete_item(story_uuid)
+            isStoryDeleted = Story.objects.filter(uuid=story_uuid).delete()[0]
             if isStoryDeleted == 0: raise ClientError("Story not found")
 
             return JsonResponse(
@@ -618,26 +706,43 @@ class TaskView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
 
-            tasks = ListContent(Task).get_items_by_parent(story_uuid=Story(uuid=story_uuid))
+            tasks = Task.objects.filter(
+                story_uuid=Story(uuid=story_uuid)
+            ).values("uuid", "name", "desc", "priority", "status")
+
+            taskList = []
+            for task in tasks:
+                taskList.append({
+                    "uuid": task["uuid"],
+                    "name": task["name"],
+                    "desc": task["desc"],
+                    "priority": task["priority"],
+                    "status": task["status"],
+                })
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Success retrieving story's tasks",
-                    "data": tasks,
+                    "data": taskList,
                 }
             )
         except Exception as e:
@@ -649,11 +754,11 @@ class TaskView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["story_uuid"] = Story(uuid=story_uuid)
@@ -661,7 +766,8 @@ class TaskView(WorkspaceView):
             isPayloadValid = TaskForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            taskUUID = ListContent(Task).create_item(**payload)
+            task = Task(**payload)
+            task.save()
 
             return JsonResponse(
                 status = 201,
@@ -669,7 +775,7 @@ class TaskView(WorkspaceView):
                     "status": "success",
                     "message": "Task has successfully created",
                     "data": {
-                        "task_uuid": taskUUID,
+                        "task_uuid": task.uuid,
                     }
                 }
             )
@@ -683,17 +789,18 @@ class TaskDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             isPayloadvalid = TaskForm(payload).is_patch_valid()
             if isPayloadvalid == False: raise ClientError("Invalid input")
 
-            ListContent(Task).update_fields(task_uuid, **payload)
+            updated = Task.objects.filter(uuid=task_uuid).update(**payload)
+            if updated == 0: raise ClientError("Story not found")
 
             return JsonResponse(
                 status = 200,
@@ -711,12 +818,13 @@ class TaskDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]): raise AuthorizationError("Action is forbidden")
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid, owner=userUUID).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-            isTaskDeleted = ListContent(Task).delete_item(task_uuid)
+            isTaskDeleted = Task.objects.filter(uuid=task_uuid).delete()[0]
             if isTaskDeleted == 0: raise ClientError("Task not found")
 
             return JsonResponse(
@@ -736,11 +844,11 @@ class TaskAssigneeView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            workspace = Workspace.objects.filter(uuid=workspace_uuid, owner=userUUID).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["task_uuid"] = Task(uuid=task_uuid)
@@ -748,16 +856,17 @@ class TaskAssigneeView(WorkspaceView):
             isPayloadValid = TaskAssigneeForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            memberInfo = User.get_user_by_fields(uuid=uuid.UUID(payload["workspace_member_uuid"]))
-            if memberInfo == None: raise ClientError("Member is not found")
+            memberInfo = User.objects.filter(uuid=uuid.UUID(payload["workspace_member_uuid"])).values("email")
+            if not len(memberInfo): raise ClientError("Member is not found")
 
-            workspace_member = WorkspaceMember.get_member_by_fields(email=memberInfo["email"])
-            if workspace_member == None: raise ClientError("Member is not valid")
+            workspaceMember = WorkspaceMember.objects.filter(email=memberInfo["email"]).values("uuid")
+            if not len(workspaceMember): raise ClientError("Member is not valid")
 
-            assigneeUUID = TaskAssignee.assign_member(
+            assignee = TaskAssignee(
                 task_uuid=payload["task_uuid"],
-                workspace_member_uuid=WorkspaceMember(uuid=workspace_member[0]["uuid"]),
+                workspace_member_uuid=WorkspaceMember(uuid=workspaceMember[0]["uuid"])
             )
+            assignee.save()
 
             return JsonResponse(
                 status = 201,
@@ -765,7 +874,7 @@ class TaskAssigneeView(WorkspaceView):
                     "status": "success",
                     "message": "Task has succesfully assigned to member",
                     "data": {
-                        "assignee_uuid": assigneeUUID,
+                        "assignee_uuid": assignee.uuid,
                     }
                 }
             )
@@ -778,19 +887,32 @@ class TaskAssigneeView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == WorkspaceMember.MemberStatus.INVITED:
+                    raise AuthorizationError("Action is forbidden")
 
-            assignees = TaskAssignee.get_assignees_by_task(task_uuid)
+            assignees = TaskAssignee.objects.filter(task_uuid=task_uuid).values("uuid", "workspace_member_uuid")
+
+            assigneeList = []
+            for assignee in assignees:
+                assigneeList.append({
+                    "uuid": assignee["uuid"],
+                    "workspace_member_uuid": assignee["workspace_member_uuid_id"],
+                })
 
             return JsonResponse(
                 status = 200,
@@ -798,7 +920,7 @@ class TaskAssigneeView(WorkspaceView):
                     "status": "success",
                     "message": "Task has succesfully assigned to member",
                     "data": {
-                        "assignees": assignees,
+                        "assignees": assigneeList,
                     }
                 }
             )
@@ -811,13 +933,13 @@ class TaskAssigneeView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
+            
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
-
-            isUnassignedTask = TaskAssignee.unassign_member(assignee_uuid)
+            isUnassignedTask = TaskAssignee.objects.filter(uuid=assignee_uuid).delete()[0]
             if isUnassignedTask == 0: raise ClientError("Assignee not found")
 
             return JsonResponse(
@@ -837,19 +959,34 @@ class SubTaskView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
 
-            subtasks = SubTask.get_subtasks_by_task(task_uuid)
+            subtasks = SubTask.objects.filter(task_uuid=task_uuid).values("uuid", "name", "is_done", "assignee_uuid")
+
+            subtaskList = []
+            for subtask in subtasks:
+                subtaskList.append({
+                    "uuid": subtask["uuid"],
+                    "name": subtask["name"],
+                    "is_done": subtask["is_done"],
+                    "assignee_uuid": subtask["assignee_uuid"],
+                })
 
             return JsonResponse(
                 status = 200,
@@ -857,7 +994,7 @@ class SubTaskView(WorkspaceView):
                     "status": "success",
                     "message": "Sub-tasks has succesfully retrieved",
                     "data": {
-                        "subtasks": subtasks,
+                        "subtasks": subtaskList,
                     }
                 }
             )
@@ -870,11 +1007,23 @@ class SubTaskView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
+                    workspace=Workspace(uuid=workspace_uuid),
+                    email=user[0]["email"],
+                ).values("status")
+
+                if not len(workspaceMember) or workspaceMember[0]["status"] == WorkspaceMember.MemberStatus.INVITED:
+                    raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             payload["task_uuid"] = Task(uuid=task_uuid)
@@ -882,7 +1031,8 @@ class SubTaskView(WorkspaceView):
             isPayloadValid = SubTaskForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            subtaskUUID = SubTask.create_task(**payload)
+            subtask = SubTask(**payload)
+            subtask.save()
 
             return JsonResponse(
                 status = 201,
@@ -890,7 +1040,7 @@ class SubTaskView(WorkspaceView):
                     "status": "success",
                     "message": "Sub-task has successfully created",
                     "data": {
-                        "subtask_uuid": subtaskUUID,
+                        "subtask_uuid": subtask.uuid,
                     }
                 }
             )
@@ -904,17 +1054,23 @@ class SubTaskDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            isWorkspaceOwner = Workspace.verify_owner(workspace_uuid, user["uuid"])
-            if isWorkspaceOwner == False:
-                isWorkspaceMember = WorkspaceMember.verify_member(
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
                     workspace=Workspace(uuid=workspace_uuid),
-                    email=user["email"],
-                )
+                    email=user[0]["email"],
+                ).values("status")
 
-                if isWorkspaceMember == False: raise AuthorizationError("Action is forbidden")
+                if not len(workspaceMember) or workspaceMember[0]["status"] == WorkspaceMember.MemberStatus.INVITED:
+                    raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
             if "assignee_uuid" in payload and payload["assignee_uuid"] != None:
@@ -923,7 +1079,8 @@ class SubTaskDetailView(WorkspaceView):
             isPayloadvalid = SubTaskForm(payload).is_patch_valid()
             if isPayloadvalid == False: raise ClientError("Invalid input")
 
-            SubTask.update_fields(subtask_uuid, **payload)
+            updated = SubTask.objects.filter(uuid=subtask_uuid).update(**payload)
+            if updated == 0: raise ClientError("Subtask not found")
 
             return JsonResponse(
                 status = 200,
@@ -941,13 +1098,25 @@ class SubTaskDetailView(WorkspaceView):
             token = bearerToken.replace("Bearer ", "")
 
             userData = TokenManager.verify_access_token(token)
-            user = User.get_user_by_fields(uuid=userData["user_uuid"])
-            if not user["is_confirmed"]: raise AuthenticationError("User is not authenticated")
+            userUUID = uuid.UUID(userData["user_uuid"])
 
-            if not Workspace.verify_owner(workspace_uuid, user["uuid"]):
-                raise AuthorizationError("Action is forbidden")
+            user = User.objects.filter(uuid=userUUID).values("uuid", "is_confirmed")
+            if not len(user): raise ClientError("User not found")
+            if not user[0]["is_confirmed"]: raise AuthenticationError("User is not authenticated")                
 
-            deletedSubtask = SubTask.delete_subtask(subtask_uuid)
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
+                    workspace=Workspace(uuid=workspace_uuid),
+                    email=user[0]["email"],
+                ).values("status")
+
+                if not len(workspaceMember) or workspaceMember[0]["status"] == WorkspaceMember.MemberStatus.INVITED:
+                    raise AuthorizationError("Action is forbidden")
+
+            deletedSubtask = SubTask.objects.filter(uuid=subtask_uuid).delete()[0]
             if deletedSubtask == 0: raise ClientError("Sub-task not found")
 
             return JsonResponse(
