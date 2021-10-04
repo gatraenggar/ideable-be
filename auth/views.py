@@ -30,13 +30,14 @@ class RegisterView(AuthView):
             isPayloadValid = RegistrationForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            registeredUser = User.get_user_by_fields(email=payload["email"])
-            if registeredUser != None: raise ConflictError("Email already registered")
+            registeredUser = User.objects.filter(email=payload["email"]).values()
+            if len(registeredUser): raise ConflictError("Email already registered")
 
             payload["password"] = PasswordManager.hash(payload["password"])
+            user = User(**payload)
+            user.save()
 
-            userUUID = User.register_user(payload)
-
+            userUUID = user.uuid
             tokenPayload = {
                 "user_uuid": userUUID.hex,
                 "uri": "auth/email-verification/",
@@ -66,9 +67,13 @@ class RegisterView(AuthView):
 class EmailVerificationView(AuthView):
     def get(self, _, auth_token):
         try:
-            verificationParam = TokenManager.verify_random_token(auth_token)
+            tokenParam = TokenManager.verify_random_token(auth_token)
 
-            User.confirm_user_email(verificationParam["user_uuid"])
+            user = User.objects.get(uuid=tokenParam["user_uuid"])
+            if user.is_confirmed: raise ClientError("Request is no longer valid")
+
+            user.is_confirmed = True
+            user.save(update_fields=["is_confirmed"])
 
             return JsonResponse(
                 status = 200,
@@ -132,10 +137,13 @@ class OAuthCallbackView(AuthView):
             userUUID = None
             statusCode = None
 
-            registeredUser = User.get_user_by_fields(email=payload["email"])
-            if registeredUser == None: 
-                userUUID = User.register_user(payload)
+            registeredUser = User.objects.filter(email=payload["email"]).values("uuid", "is_oauth")
+            if not len(registeredUser): 
+                user = User(**payload)
+                user.save()
+
                 statusCode = 201
+                userUUID = user.uuid
 
                 tokenPayload = {
                     "user_uuid": userUUID.hex,
@@ -145,8 +153,8 @@ class OAuthCallbackView(AuthView):
                 emailAuthToken = TokenManager.generate_random_token(tokenPayload)
                 send_confirmation_email(payload["email"], emailAuthToken)
             else:
-                if registeredUser["is_oauth"]:
-                    userUUID = registeredUser["uuid"]
+                if registeredUser[0]["is_oauth"]:
+                    userUUID = registeredUser[0]["uuid"]
                     statusCode = 200
                 else: raise ConflictError("Email already registered")
 
@@ -178,11 +186,12 @@ class LoginView(AuthView):
             isPayloadValid = LoginForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            user = User.get_user_model_by_fields(email=payload["email"])
-            if user is None: raise ClientError("Email is not registered")
+            user = User.objects.filter(email=payload["email"]).values("uuid", "password")
+            if len(user) != 1: raise ClientError("Email or password doesn't match any account")
+            user = user[0]
 
             isPasswordTrue = PasswordManager.verify(user["password"], payload["password"])
-            if not isPasswordTrue: raise ClientError("Wrong password")
+            if not isPasswordTrue: raise ClientError("Email or password doesn't match any account")
 
             accessToken = TokenManager.generate_access_token(user["uuid"])
             refreshToken = TokenManager.generate_refresh_token(user["uuid"])
@@ -209,7 +218,7 @@ class LogoutView(AuthView):
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
 
-            isDeleted = Authentication.delete_refresh_token(token)
+            isDeleted = Authentication.objects.filter(refresh_token=token).delete()[0]
             if not isDeleted: raise NotFoundError("Token not found")
 
             return JsonResponse(
@@ -231,7 +240,7 @@ class AuthTokenView(AuthView):
             userData = TokenManager.verify_refresh_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
-            refreshToken = Authentication.get_refresh_token(token)
+            refreshToken = Authentication.objects.filter(refresh_token=token).values()
             if refreshToken == None: raise NotFoundError("Refresh token not found")            
 
             accessToken = TokenManager.generate_access_token(userUUID)

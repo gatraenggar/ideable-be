@@ -1,4 +1,5 @@
 from .models import User
+from .utils.model_mapper import ModelMapper
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import generic
@@ -15,7 +16,8 @@ class UserView(generic.ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, _):
-        users = User.get_users()
+        userModels = User.objects.all().values()
+        users = ModelMapper.to_user_list(userModels)
 
         return JsonResponse(
             status = 200,
