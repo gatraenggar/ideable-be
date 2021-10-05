@@ -18,7 +18,6 @@ class WorkspaceFolderForm(Form):
 
 class WorkspaceListForm(Form):
     name = CharField(max_length=32)
-    folder_uuid = Folder
 
 class StoryForm(Form):
     name = CharField(min_length=1, max_length=50, required=True)

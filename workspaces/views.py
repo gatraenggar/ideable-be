@@ -499,7 +499,7 @@ class WorkspaceListView(WorkspaceView):
             return errorResponse(e)
 
 class WorkspaceListDetailView(WorkspaceView):
-    def put(self, request, workspace_uuid, folder_uuid, list_uuid):
+    def put(self, request, workspace_uuid, list_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -515,7 +515,6 @@ class WorkspaceListDetailView(WorkspaceView):
             if workspace[0]["owner_id"] != user[0]["uuid"]: raise AuthorizationError("Action is forbidden")
 
             payload = json.loads(request.body)
-            payload["folder_uuid"] = Folder(uuid=folder_uuid)
 
             isPayloadValid = WorkspaceListForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
@@ -533,7 +532,7 @@ class WorkspaceListDetailView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-    def delete(self, request, workspace_uuid, folder_uuid, list_uuid):
+    def delete(self, request, workspace_uuid, list_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -562,7 +561,7 @@ class WorkspaceListDetailView(WorkspaceView):
             return errorResponse(e)
 
 class StoryView(WorkspaceView):
-    def get(self, request, workspace_uuid, folder_uuid, list_uuid):
+    def get(self, request, workspace_uuid, list_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -610,7 +609,7 @@ class StoryView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-    def post(self, request, workspace_uuid, folder_uuid, list_uuid):
+    def post(self, request, workspace_uuid, list_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -645,7 +644,7 @@ class StoryView(WorkspaceView):
             return errorResponse(e)
 
 class StoryDetailView(WorkspaceView):
-    def patch(self, request, workspace_uuid, folder_uuid, list_uuid, story_uuid):
+    def patch(self, request, workspace_uuid, story_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -674,7 +673,7 @@ class StoryDetailView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-    def delete(self, request, workspace_uuid, folder_uuid, list_uuid, story_uuid):
+    def delete(self, request, workspace_uuid, story_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -783,7 +782,7 @@ class TaskView(WorkspaceView):
             return errorResponse(e)
 
 class TaskDetailView(WorkspaceView):
-    def patch(self, request, workspace_uuid, story_uuid, task_uuid):
+    def patch(self, request, workspace_uuid, task_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -812,7 +811,7 @@ class TaskDetailView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-    def delete(self, request, workspace_uuid, story_uuid, task_uuid):
+    def delete(self, request, workspace_uuid, task_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -838,7 +837,7 @@ class TaskDetailView(WorkspaceView):
             return errorResponse(e)
 
 class TaskAssigneeView(WorkspaceView):
-    def post(self, request, workspace_uuid, story_uuid, task_uuid):
+    def post(self, request, workspace_uuid, task_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
@@ -881,7 +880,7 @@ class TaskAssigneeView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-    def get(self, request, workspace_uuid, story_uuid, task_uuid):
+    def get(self, request, workspace_uuid, task_uuid):
         try:
             bearerToken = request.headers["Authorization"]
             token = bearerToken.replace("Bearer ", "")
