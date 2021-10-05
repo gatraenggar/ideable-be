@@ -1,3 +1,4 @@
+from main import workspaces
 from .models import Folder, List, Story, SubTask, Task, TaskAssignee, Workspace, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
 from .validators import StoryForm, SubTaskForm, TaskAssigneeForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
@@ -59,22 +60,23 @@ class WorkspaceView(generic.ListView):
             if not len(user): raise AuthenticationError("User is not authenticated")
 
             payload = json.loads(request.body)
-            payload["owner"] = User(uuid=user["uuid"])
+            payload["owner"] = User(uuid=userUUID)
 
             isPayloadValid = WorkspaceForm(payload).is_valid()
             if not isPayloadValid: return ClientError("Invalid input")
 
-            workspace = Workspace(**payload)
-            workspace.save()
+            newWorkspace = Workspace(**payload)
+            newWorkspace.save()
+            newWorkspace.refresh_from_db
+
+            workspace = Workspace.objects.filter(uuid=newWorkspace.uuid).values("uuid", "name")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "Workspace has successfully created",
-                    "data": {
-                        "workspace_uuid": workspace.uuid
-                    }
+                    "data": workspace[0]
                 }
             )
         except Exception as e:
@@ -124,11 +126,14 @@ class WorkspaceDetailView(WorkspaceView):
             updated = Workspace.objects.filter(uuid=workspace_uuid).update(name=payload["name"])
             if updated == 0: raise ClientError("Workspace not found")
 
+            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("uuid", "name")
+
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Workspace has successfully updated",
+                    "data": workspace[0]
                 }
             )
         except Exception as e:
@@ -347,17 +352,17 @@ class WorkspaceFolderView(WorkspaceView):
             isPayloadValid = WorkspaceFolderForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            folder = Folder(**payload)
-            folder.save()
+            newFolder = Folder(**payload)
+            newFolder.save()
+
+            folder = Folder.objects.filter(uuid=newFolder.uuid).values("uuid", "name")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "Folder has successfully created",
-                    "data": {
-                        "folder_uuid": folder.uuid,
-                    }
+                    "data": folder[0]
                 }
             )
         except Exception as e:
@@ -385,11 +390,14 @@ class WorkspaceFolderDetailView(WorkspaceView):
             updated = Folder.objects.filter(uuid=folder_uuid).update(name=payload["name"])
             if updated == 0: raise ClientError("Folder not found")
 
+            folder = Folder.objects.filter(uuid=folder_uuid).values("uuid", "name")
+
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Folder has successfully updated",
+                    "data": folder[0],
                 }
             )
         except Exception as e:
@@ -482,17 +490,17 @@ class WorkspaceListView(WorkspaceView):
             isPayloadValid = WorkspaceListForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            workspaceList = List(**payload)
-            workspaceList.save()
+            newList = List(**payload)
+            newList.save()
+
+            theList = List.objects.filter(uuid=newList.uuid).values("uuid", "name")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "List has successfully created",
-                    "data": {
-                        "list_uuid": workspaceList.uuid,
-                    }
+                    "data": theList[0]
                 }
             )
         except Exception as e:
@@ -522,11 +530,14 @@ class WorkspaceListDetailView(WorkspaceView):
             updated = List.objects.filter(uuid=list_uuid).update(name=payload["name"])
             if updated == 0: raise ClientError("Folder not found")
 
+            theList = List.objects.filter(uuid=list_uuid.uuid).values("uuid", "name")
+
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "List has successfully updated",
+                    "data": theList[0],
                 }
             )
         except Exception as e:
@@ -627,17 +638,17 @@ class StoryView(WorkspaceView):
             isPayloadValid = StoryForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            story = Story(**payload)
-            story.save()
+            newStory = Story(**payload)
+            newStory.save()
+
+            story = Story.objects.filter(uuid=newStory.uuid).values("uuid", "name", "desc", "priority", "status")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "Story has successfully created",
-                    "data": {
-                        "story_uuid": story.uuid,
-                    }
+                    "data": story[0],
                 }
             )
         except Exception as e:
@@ -662,12 +673,15 @@ class StoryDetailView(WorkspaceView):
 
             updated = Story.objects.filter(uuid=story_uuid).update(**payload)
             if updated == 0: raise ClientError("Story not found")
+            
+            story = Story.objects.filter(uuid=story_uuid).values("uuid", "name", "desc", "priority", "status")
 
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Story has successfully updated",
+                    "data": story[0],
                 }
             )
         except Exception as e:
@@ -765,17 +779,17 @@ class TaskView(WorkspaceView):
             isPayloadValid = TaskForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            task = Task(**payload)
-            task.save()
+            newTask = Task(**payload)
+            newTask.save()
+
+            task = Task.objects.filter(uuid=newTask.uuid).values("uuid", "name", "desc", "priority", "status")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "Task has successfully created",
-                    "data": {
-                        "task_uuid": task.uuid,
-                    }
+                    "data": task[0],
                 }
             )
         except Exception as e:
@@ -801,11 +815,14 @@ class TaskDetailView(WorkspaceView):
             updated = Task.objects.filter(uuid=task_uuid).update(**payload)
             if updated == 0: raise ClientError("Story not found")
 
+            task = Task.objects.filter(uuid=task_uuid).values("uuid", "name", "desc", "priority", "status")
+
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Task has successfully updated",
+                    "data": task[0],
                 }
             )
         except Exception as e:
@@ -861,20 +878,20 @@ class TaskAssigneeView(WorkspaceView):
             workspaceMember = WorkspaceMember.objects.filter(email=memberInfo["email"]).values("uuid")
             if not len(workspaceMember): raise ClientError("Member is not valid")
 
-            assignee = TaskAssignee(
+            newAssignee = TaskAssignee(
                 task_uuid=payload["task_uuid"],
                 workspace_member_uuid=WorkspaceMember(uuid=workspaceMember[0]["uuid"])
             )
-            assignee.save()
+            newAssignee.save()
+
+            assignee = TaskAssignee.objects.filter(uuid=newAssignee.uuid).values("uuid", "workspace_member_uuid")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "Task has succesfully assigned to member",
-                    "data": {
-                        "assignee_uuid": assignee.uuid,
-                    }
+                    "data": assignee[0],
                 }
             )
         except Exception as e:
@@ -1030,17 +1047,17 @@ class SubTaskView(WorkspaceView):
             isPayloadValid = SubTaskForm(payload).is_valid()
             if isPayloadValid == False: raise ClientError("Invalid input")
 
-            subtask = SubTask(**payload)
-            subtask.save()
+            newSubtask = SubTask(**payload)
+            newSubtask.save()
+
+            subtask = SubTask.objects.filter(uuid=newSubtask.uuid).values("uuid", "name", "is_done", "assignee_uuid")
 
             return JsonResponse(
                 status = 201,
                 data = {
                     "status": "success",
                     "message": "Sub-task has successfully created",
-                    "data": {
-                        "subtask_uuid": subtask.uuid,
-                    }
+                    "data": subtask[0],
                 }
             )
         except Exception as e:
@@ -1081,11 +1098,14 @@ class SubTaskDetailView(WorkspaceView):
             updated = SubTask.objects.filter(uuid=subtask_uuid).update(**payload)
             if updated == 0: raise ClientError("Subtask not found")
 
+            subtask = SubTask.objects.filter(uuid=subtask_uuid).values("uuid", "name", "is_done", "assignee_uuid")
+
             return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Sub-task has successfully updated",
+                    "data": subtask[0],
                 }
             )
         except Exception as e:

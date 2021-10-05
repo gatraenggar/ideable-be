@@ -17,11 +17,11 @@ class Workspace(models.Model):
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
     def __str__(self):
-        return json.dumps({
+        return {
             "uuid": self.uuid,
             "name": self.name,
             "owner": self.owner,
-        })    
+        }
 
 class WorkspaceMember(models.Model):
     class Meta:
