@@ -5,7 +5,6 @@ from .validators import RegistrationForm, LoginForm, ResendEmailForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
 from django.http import JsonResponse
-from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
@@ -117,9 +116,13 @@ class EmailVerificationView(AuthView):
 
 class OAuthView(AuthView):
     def get(self, _):
-        authURI = OAuth.request_user_consent()
+        try:
+            authURI = OAuth.request_user_consent()
 
-        return redirect(authURI)
+            return redirect(authURI)
+
+        except Exception as e:
+            return errorResponse(e)
 
 class OAuthCallbackView(AuthView):
     def get(self, request):
@@ -186,7 +189,7 @@ class LoginView(AuthView):
             isPayloadValid = LoginForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            user = User.objects.filter(email=payload["email"]).values("uuid", "password")
+            user = User.objects.filter(email=payload["email"]).values("uuid", "password", "first_name", "last_name")
             if len(user) != 1: raise ClientError("Email or password doesn't match any account")
             user = user[0]
 
@@ -206,6 +209,8 @@ class LoginView(AuthView):
                     "data": {
                         "access_token": accessToken,
                         "refresh_token": refreshToken,
+                        "first_name": user["first_name"],
+                        "last_name": user["last_name"],
                     }
                 }
             )
