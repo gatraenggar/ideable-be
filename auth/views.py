@@ -6,6 +6,7 @@ from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
+from django.shortcuts import redirect
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 import json, sys, uuid
