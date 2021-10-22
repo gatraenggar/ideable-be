@@ -30,7 +30,7 @@ class RegisterView(AuthView):
             isPayloadValid = RegistrationForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            registeredUser = User.objects.filter(email=payload["email"]).values()
+            registeredUser = User.objects.filter(email=payload["email"]).values("email")
             if len(registeredUser): raise ConflictError("Email already registered")
 
             payload["password"] = PasswordManager.hash(payload["password"])
@@ -58,6 +58,8 @@ class RegisterView(AuthView):
                     "data": {
                         "access_token": accessToken,
                         "refresh_token": refreshToken,
+                        "first_name": payload["first_name"],
+                        "last_name": payload["last_name"],
                     }
                 }
             )
