@@ -1,7 +1,7 @@
 from .models import Authentication
 from .utils.password_manager import PasswordManager
 from .utils.token_manager import TokenManager
-from .validators import RegistrationForm, LoginForm, ResendEmailForm
+from .validators import OAuthSignForm, RegistrationForm, LoginForm, ResendEmailForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
 from django.http import JsonResponse
@@ -137,6 +137,58 @@ class OAuthCallbackView(AuthView):
                 "last_name": userInfo["family_name"] if "family_name" in userInfo else "",
                 "is_oauth": True,
             }
+
+            userUUID = None
+            statusCode = None
+
+            registeredUser = User.objects.filter(email=payload["email"]).values("uuid", "is_oauth")
+            if not len(registeredUser): 
+                user = User(**payload)
+                user.save()
+
+                statusCode = 201
+                userUUID = user.uuid
+
+                tokenPayload = {
+                    "user_uuid": userUUID.hex,
+                    "uri": "auth/email-verification/",
+                }
+
+                emailAuthToken = TokenManager.generate_random_token(tokenPayload)
+                send_confirmation_email(payload["email"], emailAuthToken)
+            else:
+                if registeredUser[0]["is_oauth"]:
+                    userUUID = registeredUser[0]["uuid"]
+                    statusCode = 200
+                else: raise ConflictError("Email already registered")
+
+            accessToken = TokenManager.generate_access_token(userUUID)
+            refreshToken = TokenManager.generate_refresh_token(userUUID)
+
+            Authentication(refreshToken).save()
+
+            return JsonResponse(
+                status = statusCode,
+                data = {
+                    "status": "success",
+                    "message": "OAuth success",
+                    "data": {
+                        "access_token": accessToken,
+                        "refresh_token": refreshToken,
+                    }
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            payload["email"] = payload["email"].strip()
+            payload["is_oauth"]= True
+
+            isPayloadValid = OAuthSignForm(payload).is_valid()
+            if not isPayloadValid: raise ClientError("Invalid input")
 
             userUUID = None
             statusCode = None

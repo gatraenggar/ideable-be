@@ -1,3 +1,4 @@
+from django.db.models.fields import BooleanField
 from django.forms import Form, CharField, EmailField
 import re
 
@@ -21,6 +22,12 @@ class RegistrationForm():
         if invalidChars != None: return False
 
         return True
+
+class OAuthSignForm(Form):
+    email = EmailField(max_length=254)
+    first_name = CharField(min_length=1, max_length=20)
+    last_name = CharField(max_length=20)
+    is_oauth = BooleanField()
 
 class LoginForm(Form):
     email = EmailField(max_length=254)
