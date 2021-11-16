@@ -26,7 +26,7 @@ class RegistrationForm():
 class OAuthSignForm(Form):
     email = EmailField(max_length=254)
     first_name = CharField(min_length=1, max_length=20)
-    last_name = CharField(max_length=20)
+    last_name = CharField(max_length=20, required=False)
     is_oauth = BooleanField()
 
 class LoginForm(Form):

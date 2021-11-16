@@ -186,7 +186,10 @@ class OAuthCallbackView(AuthView):
     def post(self, request):
         try:
             payload = json.loads(request.body)
+
             payload["email"] = payload["email"].strip()
+            payload["first_name"]= payload["first_name"] if "first_name" in payload else ""
+            payload["last_name"]= payload["last_name"] if "last_name" in payload else ""
             payload["is_oauth"]= True
 
             isPayloadValid = OAuthSignForm(payload).is_valid()
