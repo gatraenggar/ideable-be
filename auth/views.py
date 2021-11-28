@@ -240,17 +240,35 @@ class OAuthCallbackView(AuthView):
 
             Authentication(refreshToken).save()
 
-            return JsonResponse(
+            response = JsonResponse(
                 status = statusCode,
                 data = {
                     "status": "success",
                     "message": "OAuth success",
                     "data": {
-                        "access_token": accessToken,
-                        "refresh_token": refreshToken,
+                        "first_name": payload["first_name"],
+                        "last_name": payload["last_name"],
+                        "is_confirmed": False,
                     }
                 }
             )
+
+            response.set_cookie(
+                key="access_token",
+                value=accessToken,
+                max_age=None,
+                expires=None,
+                httponly=True
+            )
+            response.set_cookie(
+                key="refresh_token",
+                value=refreshToken,
+                max_age=None,
+                expires=None,
+                httponly=True
+            )
+
+            return response
         except Exception as e:
             return errorResponse(e)
 
