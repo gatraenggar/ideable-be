@@ -50,8 +50,7 @@ class WorkspaceView(generic.ListView):
 
     def post(self, request):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])

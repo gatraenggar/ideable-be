@@ -3,7 +3,7 @@ import datetime, jwt
 
 class TokenManager():
     def generate_random_token(payload):
-        payload["exp"] = datetime.datetime.utcnow() + datetime.timedelta(seconds=300)
+        payload["exp"] = datetime.datetime.utcnow() + datetime.timedelta(seconds=600)
         return jwt.encode(payload, config("RANDOM_TOKEN_KEY"), algorithm="HS256")
 
     def verify_random_token(token):
@@ -12,7 +12,7 @@ class TokenManager():
     def generate_access_token(uuid):
         payload = {
             "user_uuid": uuid.hex,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=300),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=600),
         }
         return jwt.encode(payload, config("ACCESS_TOKEN_KEY"), algorithm="HS256")
 
@@ -22,7 +22,7 @@ class TokenManager():
     def generate_refresh_token(uuid):
         payload = {
             "user_uuid": uuid.hex,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=1200),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=1800),
         }
         return jwt.encode(payload, config("REFRESH_TOKEN_KEY"), algorithm="HS256")
 
