@@ -13,7 +13,7 @@ import json, sys, uuid
 
 sys.path.append("..")
 from users.models import User
-from errors.client_error import ClientError, ConflictError, NotFoundError
+from errors.client_error import AuthenticationError, ClientError, ConflictError, NotFoundError
 from errors.handler import errorResponse
 
 class AuthView(generic.ListView):
@@ -281,31 +281,54 @@ class LoginView(AuthView):
             isPayloadValid = LoginForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            user = User.objects.filter(email=payload["email"]).values("uuid", "password", "first_name", "last_name")
-            if len(user) != 1: raise ClientError("Email or password doesn't match any account")
-            user = user[0]
+            users = User.objects.filter(email=payload["email"]).values(
+                "uuid",
+                "password",
+                "first_name",
+                "last_name",
+                "is_oauth",
+                "is_confirmed"
+            )
+            if len(users) != 1 or users[0]["is_oauth"]: raise AuthenticationError("Email or password doesn't match any account")
 
+            user = users[0]
             isPasswordTrue = PasswordManager.verify(user["password"], payload["password"])
-            if not isPasswordTrue: raise ClientError("Email or password doesn't match any account")
+            if not isPasswordTrue: raise AuthenticationError("Email or password doesn't match any account")
 
             accessToken = TokenManager.generate_access_token(user["uuid"])
             refreshToken = TokenManager.generate_refresh_token(user["uuid"])
 
             Authentication(refreshToken).save()
 
-            return JsonResponse(
+            response = JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Login success",
                     "data": {
-                        "access_token": accessToken,
-                        "refresh_token": refreshToken,
                         "first_name": user["first_name"],
                         "last_name": user["last_name"],
+                        "is_confirmed": user["is_confirmed"],
                     }
                 }
             )
+
+            response.set_cookie(
+                key="access_token",
+                value=accessToken,
+                max_age=None,
+                expires=None,
+                httponly=True
+            )
+            response.set_cookie(
+                key="refresh_token",
+                value=refreshToken,
+                max_age=None,
+                expires=None,
+                httponly=True
+            )
+
+            return response
         except Exception as e:
             return errorResponse(e)
 
