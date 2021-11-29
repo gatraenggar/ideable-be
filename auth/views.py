@@ -214,8 +214,8 @@ class OAuthCallbackView(AuthView):
             userUUID = None
             statusCode = None
 
-            registeredUser = User.objects.filter(email=payload["email"]).values("uuid", "is_oauth")
-            if not len(registeredUser): 
+            registeredUsers = User.objects.filter(email=payload["email"]).values("uuid", "is_oauth", "is_confirmed")
+            if not len(registeredUsers): 
                 user = User(**payload)
                 user.save()
 
@@ -230,8 +230,8 @@ class OAuthCallbackView(AuthView):
                 emailAuthToken = TokenManager.generate_random_token(tokenPayload)
                 send_confirmation_email(payload["email"], emailAuthToken)
             else:
-                if registeredUser[0]["is_oauth"]:
-                    userUUID = registeredUser[0]["uuid"]
+                if registeredUsers[0]["is_oauth"]:
+                    userUUID = registeredUsers[0]["uuid"]
                     statusCode = 200
                 else: raise ConflictError("Email already registered")
 
@@ -248,7 +248,7 @@ class OAuthCallbackView(AuthView):
                     "data": {
                         "first_name": payload["first_name"],
                         "last_name": payload["last_name"],
-                        "is_confirmed": False,
+                        "is_confirmed": registeredUsers[0]["is_confirmed"] if "is_confirmed" in registeredUsers[0] else False,
                     }
                 }
             )
