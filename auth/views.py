@@ -248,7 +248,7 @@ class OAuthCallbackView(AuthView):
                     "data": {
                         "first_name": payload["first_name"],
                         "last_name": payload["last_name"],
-                        "is_confirmed": registeredUsers[0]["is_confirmed"] if "is_confirmed" in registeredUsers[0] else False,
+                        "is_confirmed": registeredUsers[0]["is_confirmed"] if len(registeredUsers) == 1 else False,
                     }
                 }
             )
