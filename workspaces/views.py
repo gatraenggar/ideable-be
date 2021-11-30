@@ -234,7 +234,6 @@ class WorkspaceMemberView(WorkspaceView):
             tokenPayload = {
                 "workspace_uuid": workspace_uuid.hex,
                 "email": payload["email"],
-                "uri": "workspaces/" + str(uuid.UUID(workspace_uuid.hex)) + "/members/invitation/",
             }
             emailAuthToken = TokenManager.generate_random_token(tokenPayload)
 

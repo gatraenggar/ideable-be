@@ -31,7 +31,6 @@ class OAuthSignForm(Form):
 
 class LoginForm(Form):
     email = EmailField(max_length=254)
-    password = CharField(min_length=8, max_length=20)
 
 class ResendEmailForm(Form):
     email = EmailField(max_length=254)
