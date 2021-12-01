@@ -345,19 +345,22 @@ class LoginView(AuthView):
 class LogoutView(AuthView):
     def post(self, request):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
-
-            isDeleted = Authentication.objects.filter(refresh_token=token).delete()[0]
+            refreshToken = request.COOKIES.get('refresh_token') 
+            isDeleted = Authentication.objects.filter(refresh_token=refreshToken).delete()[0]
             if not isDeleted: raise NotFoundError("Token not found")
 
-            return JsonResponse(
+            response = JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Logout success",
                 }
             )
+
+            response.delete_cookie('access_token')
+            response.delete_cookie('refresh_token')
+
+            return response
         except Exception as e:
             return errorResponse(e)
 
