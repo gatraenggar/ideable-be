@@ -282,49 +282,7 @@ class WorkspaceMemberView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-class WorkspaceFolderView(WorkspaceView):
-    def get(self, request, workspace_uuid):
-        try:
-            token = request.COOKIES.get('access_token')
-
-            userData = TokenManager.verify_access_token(token)
-            userUUID = uuid.UUID(userData["user_uuid"])
-
-            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
-            if not len(user): raise AuthenticationError("User is not authenticated")
-
-            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
-            if not len(workspace): raise NotFoundError("Workspace not found")
-            
-            if workspace[0]["owner_id"] != user[0]["uuid"]: 
-                workspaceMember = WorkspaceMember.objects.filter(
-                    workspace=Workspace(uuid=workspace_uuid),
-                    email=user[0]["email"],
-                ).values("status")
-
-                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
-                    raise AuthorizationError("Action is forbidden")
-
-            folders = Folder.objects.filter(workspace_uuid=Workspace(uuid=workspace_uuid)).values("uuid", "name")
-
-            folderList = []
-            for folder in folders:
-                folderList.append({
-                    "uuid": folder["uuid"],
-                    "name": folder["name"],
-                })
-
-            return JsonResponse(
-                status = 200,
-                data = {
-                    "status": "success",
-                    "message": "Success retrieving workspace's folder",
-                    "data": folderList,
-                }
-            )
-        except Exception as e:
-            return errorResponse(e)
-
+class WorkspaceFolderCreatorView(WorkspaceView):
     def post(self, request, workspace_uuid):
         try:
             token = request.COOKIES.get('access_token')
@@ -353,6 +311,50 @@ class WorkspaceFolderView(WorkspaceView):
                     "status": "success",
                     "message": "Folder has successfully created",
                     "data": folder[0]
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class WorkspaceFolderView(WorkspaceView):
+    def get(self, request):
+        try:
+            token = request.COOKIES.get('access_token')
+            workspacesIDs = (request.GET.get('workspace_ids').split(","))
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspaces = Workspace.objects.filter(uuid__in=workspacesIDs).values("owner_id")
+            if not len(workspaces): raise NotFoundError("Workspace not found")
+            
+            if workspaces[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMembers = WorkspaceMember.objects.filter(
+                    workspace__in=workspacesIDs,
+                    email=user[0]["email"],
+                ).values("status")
+
+                if not len(workspaceMembers) or workspaceMembers[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
+
+            folders = Folder.objects.filter(workspace_uuid__in=workspacesIDs).values("uuid", "name")
+
+            folderList = []
+            for folder in folders:
+                folderList.append({
+                    "uuid": folder["uuid"],
+                    "name": folder["name"],
+                })
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Success retrieving workspace's folder",
+                    "data": folderList,
                 }
             )
         except Exception as e:
