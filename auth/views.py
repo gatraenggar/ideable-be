@@ -5,12 +5,12 @@ from .validators import OAuthSignForm, RegistrationForm, LoginForm, ResendEmailF
 from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
 from decouple import config
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.shortcuts import redirect
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
-import json, sys, uuid
+import json, jwt, sys, uuid
 
 sys.path.append("..")
 from users.models import User
@@ -367,26 +367,39 @@ class LogoutView(AuthView):
 class AuthTokenView(AuthView):
     def get(self, request):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            refreshToken = request.COOKIES.get('refresh_token') 
 
-            userData = TokenManager.verify_refresh_token(token)
-            userUUID = uuid.UUID(userData["user_uuid"])
+            userData = None
+            try: 
+                userData = TokenManager.verify_refresh_token(refreshToken)
+            except Exception as e:
+                if isinstance(e, (jwt.ExpiredSignatureError)):
+                    HttpResponse.delete_cookie('access_token')
+                    HttpResponse.delete_cookie('refresh_token')
+                raise e
 
-            refreshToken = Authentication.objects.filter(refresh_token=token).values()
+            refreshToken = Authentication.objects.filter(refresh_token=refreshToken).values()
             if refreshToken == None: raise NotFoundError("Refresh token not found")            
 
+            userUUID = uuid.UUID(userData["user_uuid"])
             accessToken = TokenManager.generate_access_token(userUUID.hex)
 
-            return JsonResponse(
+            response = JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Access token has successfully generated",
-                    "data": {
-                        "access_token": accessToken,
-                    }
                 }
             )
+
+            response.set_cookie(
+                key="access_token",
+                value=accessToken,
+                max_age=None,
+                expires=None,
+                httponly=True
+            )
+
+            return response
         except Exception as e:
             return errorResponse(e)
