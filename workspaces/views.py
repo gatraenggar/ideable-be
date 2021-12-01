@@ -22,8 +22,7 @@ class WorkspaceView(generic.ListView):
 
     def get(self, request):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
             
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -84,8 +83,7 @@ class WorkspaceView(generic.ListView):
 class WorkspaceDetailView(WorkspaceView):
     def get(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             ownerUUID = uuid.UUID(userData["user_uuid"])
@@ -106,8 +104,7 @@ class WorkspaceDetailView(WorkspaceView):
 
     def put(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -140,8 +137,7 @@ class WorkspaceDetailView(WorkspaceView):
 
     def delete(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -205,8 +201,7 @@ class WorkspaceMemberView(WorkspaceView):
 
     def post(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -258,8 +253,7 @@ class WorkspaceMemberView(WorkspaceView):
 
     def delete(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -291,8 +285,7 @@ class WorkspaceMemberView(WorkspaceView):
 class WorkspaceFolderView(WorkspaceView):
     def get(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -334,8 +327,7 @@ class WorkspaceFolderView(WorkspaceView):
 
     def post(self, request, workspace_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -369,8 +361,7 @@ class WorkspaceFolderView(WorkspaceView):
 class WorkspaceFolderDetailView(WorkspaceView):
     def put(self, request, workspace_uuid, folder_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -403,8 +394,7 @@ class WorkspaceFolderDetailView(WorkspaceView):
 
     def delete(self, request, workspace_uuid, folder_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -429,8 +419,7 @@ class WorkspaceFolderDetailView(WorkspaceView):
 class WorkspaceListView(WorkspaceView):
     def get(self, request, workspace_uuid, folder_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -472,8 +461,7 @@ class WorkspaceListView(WorkspaceView):
 
     def post(self, request, workspace_uuid, folder_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -507,8 +495,7 @@ class WorkspaceListView(WorkspaceView):
 class WorkspaceListDetailView(WorkspaceView):
     def put(self, request, workspace_uuid, list_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -543,8 +530,7 @@ class WorkspaceListDetailView(WorkspaceView):
 
     def delete(self, request, workspace_uuid, list_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -572,8 +558,7 @@ class WorkspaceListDetailView(WorkspaceView):
 class StoryView(WorkspaceView):
     def get(self, request, workspace_uuid, list_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -620,8 +605,7 @@ class StoryView(WorkspaceView):
 
     def post(self, request, workspace_uuid, list_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -655,8 +639,7 @@ class StoryView(WorkspaceView):
 class StoryDetailView(WorkspaceView):
     def patch(self, request, workspace_uuid, story_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -687,8 +670,7 @@ class StoryDetailView(WorkspaceView):
 
     def delete(self, request, workspace_uuid, story_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -713,8 +695,7 @@ class StoryDetailView(WorkspaceView):
 class TaskView(WorkspaceView):
     def get(self, request, workspace_uuid, story_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -761,8 +742,7 @@ class TaskView(WorkspaceView):
 
     def post(self, request, workspace_uuid, story_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -796,8 +776,7 @@ class TaskView(WorkspaceView):
 class TaskDetailView(WorkspaceView):
     def patch(self, request, workspace_uuid, task_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -828,8 +807,7 @@ class TaskDetailView(WorkspaceView):
 
     def delete(self, request, workspace_uuid, task_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -854,8 +832,7 @@ class TaskDetailView(WorkspaceView):
 class TaskAssigneeView(WorkspaceView):
     def post(self, request, workspace_uuid, task_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -897,8 +874,7 @@ class TaskAssigneeView(WorkspaceView):
 
     def get(self, request, workspace_uuid, task_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -943,8 +919,7 @@ class TaskAssigneeView(WorkspaceView):
 
     def delete(self, request, workspace_uuid, assignee_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -969,8 +944,7 @@ class TaskAssigneeView(WorkspaceView):
 class SubTaskView(WorkspaceView):
     def get(self, request, workspace_uuid, task_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -1017,8 +991,7 @@ class SubTaskView(WorkspaceView):
 
     def post(self, request, workspace_uuid, task_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -1064,8 +1037,7 @@ class SubTaskView(WorkspaceView):
 class SubTaskDetailView(WorkspaceView):
     def patch(self, request, workspace_uuid, subtask_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
@@ -1111,8 +1083,7 @@ class SubTaskDetailView(WorkspaceView):
 
     def delete(self, request, workspace_uuid, subtask_uuid):
         try:
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
+            token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])

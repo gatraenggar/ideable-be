@@ -367,7 +367,7 @@ class LogoutView(AuthView):
 class AuthTokenView(AuthView):
     def get(self, request):
         try:
-            refreshToken = request.COOKIES.get('refresh_token') 
+            refreshToken = request.COOKIES.get('refresh_token')
 
             userData = None
             try: 
