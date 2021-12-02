@@ -12,7 +12,8 @@ urlpatterns = [
     path('workspaces/<uuid:workspace_uuid>/folders', views.WorkspaceFolderCreatorView.as_view()),
     path('workspaces/<uuid:workspace_uuid>/folders/<uuid:folder_uuid>', views.WorkspaceFolderDetailView.as_view()),
 
-    path('workspaces/<uuid:workspace_uuid>/folders/<uuid:folder_uuid>/lists', views.WorkspaceListView.as_view()),
+    path('workspaces/folders/lists', views.WorkspaceListView.as_view()),
+    path('workspaces/<uuid:workspace_uuid>/folders/<uuid:folder_uuid>/lists', views.WorkspaceListCreatorView.as_view()),
     path('workspaces/<uuid:workspace_uuid>/folders/lists/<uuid:list_uuid>', views.WorkspaceListDetailView.as_view()),
 
     path('workspaces/<uuid:workspace_uuid>/folders/lists/<uuid:list_uuid>/stories', views.StoryView.as_view()),

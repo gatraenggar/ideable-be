@@ -340,13 +340,14 @@ class WorkspaceFolderView(WorkspaceView):
                 if not len(workspaceMembers) or workspaceMembers[0]["status"] == 1:
                     raise AuthorizationError("Action is forbidden")
 
-            folders = Folder.objects.filter(workspace_uuid__in=workspacesIDs).values("uuid", "name")
+            folders = Folder.objects.filter(workspace_uuid__in=workspacesIDs).values("uuid", "name", "workspace_uuid")
 
             folderList = []
             for folder in folders:
                 folderList.append({
                     "uuid": folder["uuid"],
                     "name": folder["name"],
+                    "workspace_uuid": folder["workspace_uuid"],
                 })
 
             return JsonResponse(
@@ -418,49 +419,7 @@ class WorkspaceFolderDetailView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-class WorkspaceListView(WorkspaceView):
-    def get(self, request, workspace_uuid, folder_uuid):
-        try:
-            token = request.COOKIES.get('access_token')
-
-            userData = TokenManager.verify_access_token(token)
-            userUUID = uuid.UUID(userData["user_uuid"])
-
-            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
-            if not len(user): raise AuthenticationError("User is not authenticated")
-
-            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
-            if not len(workspace): raise NotFoundError("Workspace not found")
-            
-            if workspace[0]["owner_id"] != user[0]["uuid"]: 
-                workspaceMember = WorkspaceMember.objects.filter(
-                    workspace=Workspace(uuid=workspace_uuid),
-                    email=user[0]["email"],
-                ).values("status")
-
-                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
-                    raise AuthorizationError("Action is forbidden")
-
-            lists = List.objects.filter(folder_uuid=Folder(uuid=folder_uuid)).values()
-
-            listList = []
-            for listObj in lists:
-                listList.append({
-                    "uuid": listObj["uuid"],
-                    "name": listObj["name"],
-                })
-
-            return JsonResponse(
-                status = 200,
-                data = {
-                    "status": "success",
-                    "message": "Success retrieving folder's lists",
-                    "data": listList,
-                }
-            )
-        except Exception as e:
-            return errorResponse(e)
-
+class WorkspaceListCreatorView(WorkspaceView):
     def post(self, request, workspace_uuid, folder_uuid):
         try:
             token = request.COOKIES.get('access_token')
@@ -489,6 +448,67 @@ class WorkspaceListView(WorkspaceView):
                     "status": "success",
                     "message": "List has successfully created",
                     "data": theList[0]
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class WorkspaceListView(WorkspaceView):
+    def get(self, request):
+        try:
+            token = request.COOKIES.get('access_token')
+            workspaceIDs = (request.GET.get('workspace_ids').split(","))
+            folderIDs = (request.GET.get('folder_ids').split(","))
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspaces = Workspace.objects.filter(uuid__in=workspaceIDs).values("uuid", "owner_id")
+            if not len(workspaces): raise NotFoundError("Workspace not found")
+
+            verifiedWorkspaceIDs = []
+            memberWorkspaceIDs = []
+            for workspace in workspaces:
+                if workspace["owner_id"] != user[0]["uuid"]:
+                    memberWorkspaceIDs.append(workspace["uuid"])
+                else:
+                    verifiedWorkspaceIDs.append(workspace["uuid"])
+
+            if len(memberWorkspaceIDs):
+                workspaceMember = WorkspaceMember.objects.filter(
+                    workspace__in=memberWorkspaceIDs,
+                    email=user[0]["email"],
+                ).values("workspace", "status")
+
+                for member in workspaceMember:
+                    if member["status"] != 1:
+                        verifiedWorkspaceIDs.append(member["workspace"])
+
+            folders = Folder.objects.filter(uuid__in=folderIDs).values("uuid", "workspace_uuid")
+            verifiedFolderIDs = []
+            for folder in folders:
+                if folder["workspace_uuid"] in verifiedWorkspaceIDs:
+                    verifiedFolderIDs.append(folder["uuid"])
+
+            lists = List.objects.filter(folder_uuid__in=verifiedFolderIDs).values("uuid", "name", "folder_uuid")
+
+            listList = []
+            for listObj in lists:
+                listList.append({
+                    "uuid": listObj["uuid"],
+                    "name": listObj["name"],
+                    "folder_uuid": listObj["folder_uuid"],
+                })
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Success retrieving folder's lists",
+                    "data": listList,
                 }
             )
         except Exception as e:
