@@ -20,7 +20,8 @@ urlpatterns = [
     path('workspaces/<uuid:workspace_uuid>/folders/lists/<uuid:list_uuid>/stories', views.StoryCreatorView.as_view()),
     path('workspaces/<uuid:workspace_uuid>/folders/lists/stories/<uuid:story_uuid>', views.StoryDetailView.as_view()),
 
-    path('workspaces/<uuid:workspace_uuid>/folders/lists/stories/<uuid:story_uuid>/tasks', views.TaskView.as_view()),
+    path('workspaces/folders/lists/stories/tasks', views.TaskView.as_view()),
+    path('workspaces/<uuid:workspace_uuid>/folders/lists/stories/<uuid:story_uuid>/tasks', views.TaskCreatorView.as_view()),
     path('workspaces/<uuid:workspace_uuid>/folders/lists/stories/tasks/<uuid:task_uuid>', views.TaskDetailView.as_view()),
 
     path('workspaces/<uuid:workspace_uuid>/folders/lists/stories/tasks/<uuid:task_uuid>/assignees', views.TaskAssigneeView.as_view()),

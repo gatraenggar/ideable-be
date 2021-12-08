@@ -717,54 +717,7 @@ class StoryDetailView(WorkspaceView):
         except Exception as e:
             return errorResponse(e)
 
-class TaskView(WorkspaceView):
-    def get(self, request, workspace_uuid, story_uuid):
-        try:
-            token = request.COOKIES.get('access_token')
-
-            userData = TokenManager.verify_access_token(token)
-            userUUID = uuid.UUID(userData["user_uuid"])
-
-            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
-            if not len(user): raise AuthenticationError("User is not authenticated")
-
-            workspace = Workspace.objects.filter(uuid=workspace_uuid).values("owner_id")
-            if not len(workspace): raise NotFoundError("Workspace not found")
-            
-            if workspace[0]["owner_id"] != user[0]["uuid"]: 
-                workspaceMember = WorkspaceMember.objects.filter(
-                    workspace=Workspace(uuid=workspace_uuid),
-                    email=user[0]["email"],
-                ).values("status")
-
-                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
-                    raise AuthorizationError("Action is forbidden")
-
-            tasks = Task.objects.filter(
-                story_uuid=Story(uuid=story_uuid)
-            ).values("uuid", "name", "desc", "priority", "status")
-
-            taskList = []
-            for task in tasks:
-                taskList.append({
-                    "uuid": task["uuid"],
-                    "name": task["name"],
-                    "desc": task["desc"],
-                    "priority": task["priority"],
-                    "status": task["status"],
-                })
-
-            return JsonResponse(
-                status = 200,
-                data = {
-                    "status": "success",
-                    "message": "Success retrieving story's tasks",
-                    "data": taskList,
-                }
-            )
-        except Exception as e:
-            return errorResponse(e)
-
+class TaskCreatorView(WorkspaceView):
     def post(self, request, workspace_uuid, story_uuid):
         try:
             token = request.COOKIES.get('access_token')
@@ -793,6 +746,56 @@ class TaskView(WorkspaceView):
                     "status": "success",
                     "message": "Task has successfully created",
                     "data": task[0],
+                }
+            )
+        except Exception as e:
+            return errorResponse(e)
+
+class TaskView(WorkspaceView):
+    def get(self, request):
+        try:
+            token = request.COOKIES.get('access_token')
+            workspaceIDs = (request.GET.get('workspace_ids').split(","))
+            storyIDs = (request.GET.get('story_ids').split(","))
+
+            userData = TokenManager.verify_access_token(token)
+            userUUID = uuid.UUID(userData["user_uuid"])
+
+            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+            if not len(user): raise AuthenticationError("User is not authenticated")
+
+            workspace = Workspace.objects.filter(uuid__in=workspaceIDs).values("owner_id")
+            if not len(workspace): raise NotFoundError("Workspace not found")
+            
+            if workspace[0]["owner_id"] != user[0]["uuid"]: 
+                workspaceMember = WorkspaceMember.objects.filter(
+                    workspace__in=workspaceIDs,
+                    email=user[0]["email"],
+                ).values("status")
+
+                if not len(workspaceMember) or workspaceMember[0]["status"] == 1:
+                    raise AuthorizationError("Action is forbidden")
+
+            tasks = Task.objects.filter(
+                story_uuid__in=storyIDs
+            ).values("uuid", "name", "desc", "priority", "status")
+
+            taskList = []
+            for task in tasks:
+                taskList.append({
+                    "uuid": task["uuid"],
+                    "name": task["name"],
+                    "desc": task["desc"],
+                    "priority": task["priority"],
+                    "status": task["status"],
+                })
+
+            return JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Success retrieving story's tasks",
+                    "data": taskList,
                 }
             )
         except Exception as e:
