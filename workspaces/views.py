@@ -320,35 +320,37 @@ class WorkspaceFolderView(WorkspaceView):
     def get(self, request):
         try:
             token = request.COOKIES.get('access_token')
-            workspacesIDs = (request.GET.get('workspace_ids').split(","))
-
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
-            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
-            if not len(user): raise AuthenticationError("User is not authenticated")
-
-            workspaces = Workspace.objects.filter(uuid__in=workspacesIDs).values("owner_id")
-            if not len(workspaces): raise NotFoundError("Workspace not found")
-            
-            if workspaces[0]["owner_id"] != user[0]["uuid"]: 
-                workspaceMembers = WorkspaceMember.objects.filter(
-                    workspace__in=workspacesIDs,
-                    email=user[0]["email"],
-                ).values("status")
-
-                if not len(workspaceMembers) or workspaceMembers[0]["status"] == 1:
-                    raise AuthorizationError("Action is forbidden")
-
-            folders = Folder.objects.filter(workspace_uuid__in=workspacesIDs).values("uuid", "name", "workspace_uuid")
-
             folderList = []
-            for folder in folders:
-                folderList.append({
-                    "uuid": folder["uuid"],
-                    "name": folder["name"],
-                    "workspace_uuid": folder["workspace_uuid"],
-                })
+
+            workspacesIDsParam = request.GET.get('workspace_ids')
+            if len(workspacesIDsParam) > 0:
+                workspacesIDs = workspacesIDsParam.split(",")
+                user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+                if not len(user): raise AuthenticationError("User is not authenticated")
+
+                workspaces = Workspace.objects.filter(uuid__in=workspacesIDs).values("owner_id")
+                if not len(workspaces): raise NotFoundError("Workspace not found")
+                
+                if workspaces[0]["owner_id"] != user[0]["uuid"]: 
+                    workspaceMembers = WorkspaceMember.objects.filter(
+                        workspace__in=workspacesIDs,
+                        email=user[0]["email"],
+                    ).values("status")
+
+                    if not len(workspaceMembers) or workspaceMembers[0]["status"] == 1:
+                        raise AuthorizationError("Action is forbidden")
+
+                folders = Folder.objects.filter(workspace_uuid__in=workspacesIDs).values("uuid", "name", "workspace_uuid")
+
+                for folder in folders:
+                    folderList.append({
+                        "uuid": folder["uuid"],
+                        "name": folder["name"],
+                        "workspace_uuid": folder["workspace_uuid"],
+                    })
 
             return JsonResponse(
                 status = 200,
@@ -457,51 +459,55 @@ class WorkspaceListView(WorkspaceView):
     def get(self, request):
         try:
             token = request.COOKIES.get('access_token')
-            workspaceIDs = (request.GET.get('workspace_ids').split(","))
-            folderIDs = (request.GET.get('folder_ids').split(","))
-
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
-            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
-            if not len(user): raise AuthenticationError("User is not authenticated")
-
-            workspaces = Workspace.objects.filter(uuid__in=workspaceIDs).values("uuid", "owner_id")
-            if not len(workspaces): raise NotFoundError("Workspace not found")
-
-            verifiedWorkspaceIDs = []
-            memberWorkspaceIDs = []
-            for workspace in workspaces:
-                if workspace["owner_id"] != user[0]["uuid"]:
-                    memberWorkspaceIDs.append(workspace["uuid"])
-                else:
-                    verifiedWorkspaceIDs.append(workspace["uuid"])
-
-            if len(memberWorkspaceIDs):
-                workspaceMember = WorkspaceMember.objects.filter(
-                    workspace__in=memberWorkspaceIDs,
-                    email=user[0]["email"],
-                ).values("workspace", "status")
-
-                for member in workspaceMember:
-                    if member["status"] != 1:
-                        verifiedWorkspaceIDs.append(member["workspace"])
-
-            folders = Folder.objects.filter(uuid__in=folderIDs).values("uuid", "workspace_uuid")
-            verifiedFolderIDs = []
-            for folder in folders:
-                if folder["workspace_uuid"] in verifiedWorkspaceIDs:
-                    verifiedFolderIDs.append(folder["uuid"])
-
-            lists = List.objects.filter(folder_uuid__in=verifiedFolderIDs).values("uuid", "name", "folder_uuid")
-
             listList = []
-            for listObj in lists:
-                listList.append({
-                    "uuid": listObj["uuid"],
-                    "name": listObj["name"],
-                    "folder_uuid": listObj["folder_uuid"],
-                })
+
+            workspacesIDsParam = request.GET.get('workspace_ids')
+            folderIDsParam = request.GET.get('folder_ids')
+            if len(workspacesIDsParam) > 0 or len(folderIDsParam) > 0:
+                workspaceIDs = workspacesIDsParam.split(",")
+                folderIDs = folderIDsParam.split(",")
+
+                user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+                if not len(user): raise AuthenticationError("User is not authenticated")
+
+                workspaces = Workspace.objects.filter(uuid__in=workspaceIDs).values("uuid", "owner_id")
+                if not len(workspaces): raise NotFoundError("Workspace not found")
+
+                verifiedWorkspaceIDs = []
+                memberWorkspaceIDs = []
+                for workspace in workspaces:
+                    if workspace["owner_id"] != user[0]["uuid"]:
+                        memberWorkspaceIDs.append(workspace["uuid"])
+                    else:
+                        verifiedWorkspaceIDs.append(workspace["uuid"])
+
+                if len(memberWorkspaceIDs):
+                    workspaceMember = WorkspaceMember.objects.filter(
+                        workspace__in=memberWorkspaceIDs,
+                        email=user[0]["email"],
+                    ).values("workspace", "status")
+
+                    for member in workspaceMember:
+                        if member["status"] != 1:
+                            verifiedWorkspaceIDs.append(member["workspace"])
+
+                folders = Folder.objects.filter(uuid__in=folderIDs).values("uuid", "workspace_uuid")
+                verifiedFolderIDs = []
+                for folder in folders:
+                    if folder["workspace_uuid"] in verifiedWorkspaceIDs:
+                        verifiedFolderIDs.append(folder["uuid"])
+
+                lists = List.objects.filter(folder_uuid__in=verifiedFolderIDs).values("uuid", "name", "folder_uuid")
+
+                for listObj in lists:
+                    listList.append({
+                        "uuid": listObj["uuid"],
+                        "name": listObj["name"],
+                        "folder_uuid": listObj["folder_uuid"],
+                    })
 
             return JsonResponse(
                 status = 200,
@@ -615,40 +621,44 @@ class StoryView(WorkspaceView):
     def get(self, request):
         try:
             token = request.COOKIES.get('access_token')
-            workspaceIDs = (request.GET.get('workspace_ids').split(","))
-            listIDs = (request.GET.get('list_ids').split(","))
-
             userData = TokenManager.verify_access_token(token)
             userUUID = uuid.UUID(userData["user_uuid"])
 
-            user = User.objects.filter(uuid=userUUID).values("uuid", "email")
-            if not len(user): raise AuthenticationError("User is not authenticated")
-
-            workspaces = Workspace.objects.filter(uuid__in=workspaceIDs).values("owner_id")
-            if not len(workspaces): raise NotFoundError("Workspace not found")
-            
-            if workspaces[0]["owner_id"] != user[0]["uuid"]: 
-                workspaceMembers = WorkspaceMember.objects.filter(
-                    workspace=workspaceIDs,
-                    email=user[0]["email"],
-                ).values("status")
-
-                if not len(workspaceMembers) or workspaceMembers[0]["status"] == 1:
-                    raise AuthorizationError("Action is forbidden")
-
-            stories = Story.objects.filter(
-                list_uuid__in=listIDs
-            ).values("uuid", "name", "desc", "priority", "status")
-
             storyList = []
-            for story in stories:
-                storyList.append({
-                    "uuid": story["uuid"],
-                    "name": story["name"],
-                    "desc": story["desc"],
-                    "priority": story["priority"],
-                    "status": story["status"],
-                })
+
+            workspacesIDsParam = request.GET.get('workspace_ids')
+            listIDsParam = request.GET.get('list_ids')
+            if len(workspacesIDsParam) > 0 or len(listIDsParam) > 0:
+                workspaceIDs = workspacesIDsParam.split(",")
+                listIDs = listIDsParam.split(",")
+
+                user = User.objects.filter(uuid=userUUID).values("uuid", "email")
+                if not len(user): raise AuthenticationError("User is not authenticated")
+
+                workspaces = Workspace.objects.filter(uuid__in=workspaceIDs).values("owner_id")
+                if not len(workspaces): raise NotFoundError("Workspace not found")
+                
+                if workspaces[0]["owner_id"] != user[0]["uuid"]: 
+                    workspaceMembers = WorkspaceMember.objects.filter(
+                        workspace=workspaceIDs,
+                        email=user[0]["email"],
+                    ).values("status")
+
+                    if not len(workspaceMembers) or workspaceMembers[0]["status"] == 1:
+                        raise AuthorizationError("Action is forbidden")
+
+                stories = Story.objects.filter(
+                    list_uuid__in=listIDs
+                ).values("uuid", "name", "desc", "priority", "status")
+
+                for story in stories:
+                    storyList.append({
+                        "uuid": story["uuid"],
+                        "name": story["name"],
+                        "desc": story["desc"],
+                        "priority": story["priority"],
+                        "status": story["status"],
+                    })
 
             return JsonResponse(
                 status = 200,
