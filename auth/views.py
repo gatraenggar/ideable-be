@@ -345,7 +345,7 @@ class LoginView(AuthView):
 class LogoutView(AuthView):
     def post(self, request):
         try:
-            refreshToken = request.COOKIES.get('refresh_token') 
+            refreshToken = request.COOKIES.get('refresh_token')
             isDeleted = Authentication.objects.filter(refresh_token=refreshToken).delete()[0]
             if not isDeleted: raise NotFoundError("Token not found")
 
@@ -357,8 +357,11 @@ class LogoutView(AuthView):
                 }
             )
 
-            response.delete_cookie('access_token')
-            response.delete_cookie('refresh_token')
+            if request.COOKIES.get('access_token') != "":
+                response.delete_cookie(key='access_token')
+
+            if request.COOKIES.get('refresh_token') != "":
+                response.delete_cookie(key='refresh_token')
 
             return response
         except Exception as e:
@@ -373,9 +376,7 @@ class AuthTokenView(AuthView):
             try: 
                 userData = TokenManager.verify_refresh_token(refreshToken)
             except Exception as e:
-                if isinstance(e, (jwt.ExpiredSignatureError)):
-                    HttpResponse.delete_cookie('access_token')
-                    HttpResponse.delete_cookie('refresh_token')
+                if isinstance(e, (jwt.ExpiredSignatureError)): raise AuthenticationError('Re-login required')
                 raise e
 
             refreshToken = Authentication.objects.filter(refresh_token=refreshToken).values()
