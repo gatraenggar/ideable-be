@@ -95,35 +95,13 @@ class EmailVerificationView(AuthView):
 
             Authentication(refreshToken).save()
 
-            response = JsonResponse(
+            return JsonResponse(
                 status = 200,
                 data = {
                     "status": "success",
                     "message": "Email has successfully verified",
-                    "data": {
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
-                        "is_confirmed": user.is_confirmed,
-                    }
                 }
             )
-
-            response.set_cookie(
-                key="access_token",
-                value=accessToken,
-                max_age=None,
-                expires=None,
-                httponly=True
-            )
-            response.set_cookie(
-                key="refresh_token",
-                value=refreshToken,
-                max_age=None,
-                expires=None,
-                httponly=True
-            )
-
-            return response
         except Exception as e:
             return errorResponse(e)
 
