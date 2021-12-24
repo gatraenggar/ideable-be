@@ -10,4 +10,5 @@ urlpatterns = [
     path('auth/email-verification/<str:auth_token>', views.EmailVerificationView.as_view()),
     path('oauth/google/login', views.OAuthView.as_view()),
     path('oauth/google/login/callback', views.OAuthCallbackView.as_view()),
+    path('auth/user-status', views.AuthUserStatus.as_view()),
 ]

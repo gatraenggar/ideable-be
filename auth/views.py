@@ -404,3 +404,22 @@ class AuthTokenView(AuthView):
             return response
         except Exception as e:
             return errorResponse(e)
+
+class AuthUserStatus(AuthView):
+    def get(self, request):
+        try:
+            token = request.COOKIES.get('access_token')
+            
+            TokenManager.verify_access_token(token)
+
+            response = JsonResponse(
+                status = 200,
+                data = {
+                    "status": "success",
+                    "message": "Access token is valid",
+                }
+            )
+
+            return response
+        except Exception as e:
+            return errorResponse(e)
