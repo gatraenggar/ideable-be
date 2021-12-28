@@ -6,7 +6,7 @@ sys.path.append("..")
 from users.models import User
 
 class WorkspaceForm(Form):
-    name = CharField(max_length=32)
+    name = CharField(min_length=2, max_length=32)
     owner = User
 
 class WorkspaceMemberForm(Form):
