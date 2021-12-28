@@ -4,8 +4,7 @@ from .utils.token_manager import TokenManager
 from .validators import OAuthSignForm, RegistrationForm, LoginForm, ResendEmailForm
 from .services.rabbitmq.email_confirmation import send_confirmation_email
 from .services.oauth.oauth import OAuth
-from decouple import config
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.shortcuts import redirect
 from django.views import generic

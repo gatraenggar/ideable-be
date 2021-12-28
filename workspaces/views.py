@@ -1,4 +1,3 @@
-from main import workspaces
 from .models import Folder, List, Story, SubTask, Task, TaskAssignee, Workspace, WorkspaceMember
 from .services.rabbitmq.workspace_invitation import send_invitation_email
 from .validators import StoryForm, SubTaskForm, TaskAssigneeForm, TaskForm, WorkspaceForm, WorkspaceFolderForm, WorkspaceListForm, WorkspaceMemberForm
@@ -61,7 +60,7 @@ class WorkspaceView(generic.ListView):
             payload["owner"] = User(uuid=userUUID)
 
             isPayloadValid = WorkspaceForm(payload).is_valid()
-            if not isPayloadValid: return ClientError("Invalid input")
+            if not isPayloadValid: raise ClientError("Invalid input. Characters length is 2-32.")
 
             newWorkspace = Workspace(**payload)
             newWorkspace.save()
