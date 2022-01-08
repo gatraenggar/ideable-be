@@ -20,7 +20,7 @@ class WorkspaceListForm(Form):
     name = CharField(max_length=32)
 
 class StoryForm(Form):
-    name = CharField(min_length=1, max_length=50, required=True)
+    name = CharField(min_length=1, max_length=80, required=True)
     desc = CharField(max_length=500, required=False)
     priority = ChoiceField(choices=Story.PriorityChoices.choices)
     status = ChoiceField(choices=Story.StatusChoices.choices)
@@ -30,7 +30,7 @@ class StoryForm(Form):
         payload = story_form.data
 
         if "name" in payload:
-            if len(payload["name"]) < 1 or len(payload["name"]) > 50:
+            if len(payload["name"]) < 1 or len(payload["name"]) > 80:
                 return False
         if "desc" in payload:
             if len(payload["desc"]) < 1 or len(payload["desc"]) > 500:

@@ -597,7 +597,7 @@ class StoryCreatorView(WorkspaceView):
             payload = json.loads(request.body)
             payload["list_uuid"] = List(uuid=list_uuid)
 
-            isPayloadValid = StoryForm(payload).is_valid()
+            isPayloadValid = StoryForm(payload).is_patch_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
             newStory = Story(**payload)

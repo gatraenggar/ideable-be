@@ -77,7 +77,7 @@ class Story(models.Model):
         DONE = 5
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50, blank=False, null=True)
+    name = models.CharField(max_length=80, blank=False, null=True)
     desc = models.CharField(max_length=500, blank=True, null=True)
     priority = models.IntegerField(choices=PriorityChoices.choices, default=1, null=False)
     status = models.IntegerField(choices=StatusChoices.choices, default=1, null=False)
