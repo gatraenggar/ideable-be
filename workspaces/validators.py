@@ -48,7 +48,7 @@ class StoryForm(Form):
         return True
 
 class TaskForm(Form):
-    name = CharField(min_length=1, max_length=50, required=True)
+    name = CharField(min_length=1, max_length=80, required=True)
     desc = CharField(max_length=500, required=False)
     priority = ChoiceField(choices=Task.PriorityChoices.choices)
     status = ChoiceField(choices=Task.StatusChoices.choices)
@@ -58,7 +58,7 @@ class TaskForm(Form):
         payload = task_form.data
 
         if "name" in payload:
-            if len(payload["name"]) < 1 or len(payload["name"]) > 50:
+            if len(payload["name"]) < 1 or len(payload["name"]) > 80:
                 return False
         if "desc" in payload:
             if len(payload["desc"]) < 1 or len(payload["desc"]) > 500:
