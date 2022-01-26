@@ -728,7 +728,7 @@ class StoryDetailView(WorkspaceView):
 
 class TaskCreatorView(WorkspaceView):
     def post(self, request, workspace_uuid, story_uuid):
-        # try:
+        try:
             token = request.COOKIES.get('access_token')
 
             userData = TokenManager.verify_access_token(token)
@@ -757,8 +757,8 @@ class TaskCreatorView(WorkspaceView):
                     "data": task[0],
                 }
             )
-        # except Exception as e:
-        #     return errorResponse(e)
+        except Exception as e:
+            return errorResponse(e)
 
 class TaskView(WorkspaceView):
     def get(self, request):
