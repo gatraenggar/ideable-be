@@ -4,7 +4,7 @@ from users.models import User
 from errors.client_error import ClientError
 
 
-def post_verify_user_email(auth_token):
+def put_verify_user_email(auth_token):
     tokenParam = TokenManager.verify_random_token(auth_token)
 
     user = User.objects.get(uuid=tokenParam["user_uuid"])

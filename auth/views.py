@@ -3,28 +3,24 @@ from django.utils.decorators import method_decorator
 from django.shortcuts import redirect
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
-import json, jwt, sys, uuid
+import json, sys
 
-from .models import Authentication
-from .utils.password_manager import PasswordManager
 from .utils.token_manager import TokenManager
 from .validators import OAuthSignForm, RegistrationForm, LoginForm, ResendEmailForm
-from .services.rabbitmq.email_confirmation import send_confirmation_email
-from .services.oauth.oauth import OAuth
 
+from .use_cases.get_login_oauth import get_login_oauth
+from .use_cases.get_oauth_user_consent import get_oauth_user_consent
 from .use_cases.post_register_user import post_register_user
-from .use_cases.post_verify_user_email import post_verify_user_email
+from .use_cases.post_verification_email import post_verification_email
 from .use_cases.post_login_oauth import post_login_oauth
 from .use_cases.post_login_email import post_login_email
 from .use_cases.post_logout import post_logout
-from .use_cases.get_login_oauth import get_login_oauth
-from .use_cases.get_oauth_user_consent import get_oauth_user_consent
-from .use_cases.get_verification_email import get_verification_email
+from .use_cases.put_verify_user_email import put_verify_user_email
 
 
 sys.path.append("..")
 from users.models import User
-from errors.client_error import AuthenticationError, ClientError, ConflictError, NotFoundError
+from errors.client_error import ClientError
 from errors.handler import errorResponse
 
 class AuthView(generic.ListView):
@@ -76,7 +72,7 @@ class RegisterView(AuthView):
             return errorResponse(e)
 
 class EmailVerificationView(AuthView):
-    def get(self, request):
+    def post(self, request):
         try:
             payload = json.loads(request.body)
             payload["email"] = payload["email"].strip()
@@ -88,7 +84,7 @@ class EmailVerificationView(AuthView):
             token = bearerToken.replace("Bearer ", "")
             payload["token"] = token
 
-            get_verification_email(payload)
+            post_verification_email(payload)
 
             return JsonResponse(
                 status = 202,
@@ -100,9 +96,9 @@ class EmailVerificationView(AuthView):
         except Exception as e:
             return errorResponse(e)
 
-    def post(self, _, auth_token):
+    def put(self, _, auth_token):
         try:
-            post_verify_user_email(auth_token)
+            put_verify_user_email(auth_token)
 
             return JsonResponse(
                 status = 200,
