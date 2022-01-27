@@ -29,10 +29,3 @@ class User(models.Model):
             "created_at": self.created_at,
         })
 
-    def get_user_by_fields(*return_values, **payload):
-        userModel = User.objects.filter(**payload).values(*return_values)
-        if not len(userModel): return None
-
-        user = ModelMapper.to_single_user(userModel)
-
-        return user
