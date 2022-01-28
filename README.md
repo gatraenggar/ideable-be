@@ -25,9 +25,9 @@ REST API app for Ideable (Jira-like software development tracker). A self-develo
     py -m pip install -r requirements.txt
 
 ### Configuration
-#### 4. Create a PostgreSQL database
-#### 5. Rename `example.env` to `.env`. Then change the all values inside the double square brackets in that `.env` file based on yours
-#### 6. Change `access_token_key`, `refresh_token_key`, and `random_token_key` in `.env` file with your generated encryption keys
+#### 8. Create a PostgreSQL database
+#### 9. Rename `example.env` to `.env`. Then change the all values inside the double square brackets in that `.env` file based on yours
+#### 10. Change `access_token_key`, `refresh_token_key`, and `random_token_key` in `.env` file with your generated encryption keys
 You can generate your own encryption keys with following steps:
 1. Enter this site https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx
 2. Choose `Encryption key`
@@ -36,7 +36,7 @@ You can generate your own encryption keys with following steps:
 5. Click `Get new results` button, then copy the generated string to the config file
 
 ### Run the App
-#### 7. Migrate/create the database tables through this command
+#### 11. Migrate/create the database tables through this command
     py manage.py migrate
-#### 8. Make sure the [ideable-queue-consumer app](https://github.com/gatraenggar/ideable-queue-consumer) has running. Then run this to start-up the app in development
+#### 12. Make sure the [ideable-queue-consumer app](https://github.com/gatraenggar/ideable-queue-consumer) has running. Then run this to start-up the app in development
     py manage.py runserver localhost:8080
