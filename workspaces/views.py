@@ -331,7 +331,7 @@ class WorkspaceListDetailView(WorkspaceView):
 
             updateListResp = put_update_list({
                 "token": request.COOKIES.get('access_token'),
-                "payload": payload["name"],
+                "name": payload["name"],
                 "workspace_uuid": workspace_uuid,
                 "list_uuid": list_uuid,
             })

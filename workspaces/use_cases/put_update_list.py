@@ -16,13 +16,13 @@ def put_update_list(payload: dict):
     if not len(workspace): raise NotFoundError("Workspace not found")
     if workspace[0]["owner_id"] != user[0]["uuid"]: raise AuthorizationError("Action is forbidden")
 
-    isPayloadValid = WorkspaceListForm(payload).is_valid()
+    isPayloadValid = WorkspaceListForm({"name": payload["name"]}).is_valid()
     if not isPayloadValid: raise ClientError("Invalid input")
 
     updated = List.objects.filter(uuid=payload["list_uuid"]).update(name=payload["name"])
     if updated == 0: raise ClientError("Folder not found")
 
-    lists = List.objects.filter(uuid=payload["list_uuid"].uuid).values("uuid", "name")
+    lists = List.objects.filter(uuid=payload["list_uuid"]).values("uuid", "name")
 
     return {
         "list": lists[0]
