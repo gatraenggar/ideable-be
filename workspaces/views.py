@@ -150,7 +150,7 @@ class WorkspaceMemberView(WorkspaceView):
                 redirect(updateStatusResp["target"])
 
             return JsonResponse(
-                status = 201,
+                status = 200,
                 data = {
                     "status": "success",
                     "message": "Workspace membership has successfully verified",
@@ -170,7 +170,7 @@ class WorkspaceMemberView(WorkspaceView):
             })
 
             return JsonResponse(
-                status = 200,
+                status = 201,
                 data = {
                     "status": "success",
                     "message": "Invitation email has successfully sent to user",
