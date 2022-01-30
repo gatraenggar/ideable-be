@@ -81,9 +81,8 @@ class EmailVerificationView(AuthView):
             isPayloadValid = ResendEmailForm(payload).is_valid()
             if not isPayloadValid: raise ClientError("Invalid input")
 
-            bearerToken = request.headers["Authorization"]
-            token = bearerToken.replace("Bearer ", "")
-            payload["token"] = token
+            accessToken = request.COOKIES.get('access_token')
+            payload["token"] = accessToken
 
             post_verification_email(payload)
 
@@ -143,7 +142,7 @@ class OAuthCallbackView(AuthView):
             return errorResponse(e)
 
     def post(self, request):
-        # try:
+        try:
             payload = json.loads(request.body)
 
             payload["email"] = payload["email"].strip()
@@ -185,8 +184,8 @@ class OAuthCallbackView(AuthView):
             )
 
             return response
-        # except Exception as e:
-        #     return errorResponse(e)
+        except Exception as e:
+            return errorResponse(e)
 
 class LoginView(AuthView):
     def post(self, request):
