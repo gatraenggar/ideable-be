@@ -133,8 +133,8 @@ class OAuthCallbackView(AuthView):
                     "status": "success",
                     "message": "OAuth success",
                     "data": {
-                        "access_token": loginOauthResp["accessToken"],
-                        "refresh_token": loginOauthResp["refreshToken"],
+                        "access_token": loginOauthResp["access_token"],
+                        "refresh_token": loginOauthResp["refresh_token"],
                     }
                 }
             )
@@ -142,7 +142,7 @@ class OAuthCallbackView(AuthView):
             return errorResponse(e)
 
     def post(self, request):
-        try:
+        # try:
             payload = json.loads(request.body)
 
             payload["email"] = payload["email"].strip()
@@ -170,22 +170,22 @@ class OAuthCallbackView(AuthView):
 
             response.set_cookie(
                 key="access_token",
-                value=loginOauthResp["accessToken"],
+                value=loginOauthResp["access_token"],
                 max_age=None,
                 expires=None,
                 httponly=True
             )
             response.set_cookie(
                 key="refresh_token",
-                value=loginOauthResp["refreshToken"],
+                value=loginOauthResp["refresh_token"],
                 max_age=None,
                 expires=None,
                 httponly=True
             )
 
             return response
-        except Exception as e:
-            return errorResponse(e)
+        # except Exception as e:
+        #     return errorResponse(e)
 
 class LoginView(AuthView):
     def post(self, request):
@@ -213,14 +213,14 @@ class LoginView(AuthView):
 
             response.set_cookie(
                 key="access_token",
-                value=loginEmailResp["accessToken"],
+                value=loginEmailResp["access_token"],
                 max_age=None,
                 expires=None,
                 httponly=True
             )
             response.set_cookie(
                 key="refresh_token",
-                value=loginEmailResp["refreshToken"],
+                value=loginEmailResp["refresh_token"],
                 max_age=None,
                 expires=None,
                 httponly=True
