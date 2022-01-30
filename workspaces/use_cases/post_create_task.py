@@ -12,18 +12,12 @@ def post_create_task(payload: dict):
     if not len(workspace): raise NotFoundError("Workspace not found")
     if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-    taskPayload = {
-        "name": payload["name"],
-        "desc": payload["desc"],
-        "priority": payload["priority"],
-        "status": payload["status"],
-        "story_uuid": Story(uuid=payload["story_uuid"]),
-    }
+    payload["task_req"]["story_uuid"] = Story(uuid=payload["story_uuid"])
 
-    isPayloadValid = TaskForm(taskPayload).is_patch_valid()
+    isPayloadValid = TaskForm(payload["task_req"]).is_patch_valid()
     if isPayloadValid == False: raise ClientError("Invalid input")
 
-    newTask = Task(**taskPayload)
+    newTask = Task(**payload["task_req"])
     newTask.save()
 
     tasks = Task.objects.filter(uuid=newTask.uuid).values("uuid", "name", "desc", "priority", "status")

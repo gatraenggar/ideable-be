@@ -454,10 +454,7 @@ class TaskCreatorView(WorkspaceView):
 
             createTaskResp = post_create_task({
                 "token": request.COOKIES.get('access_token'),
-                "name": payload["name"],
-                "desc": payload["desc"],
-                "priority": payload["priority"],
-                "status": payload["status"],
+                "task_req": payload,
                 "workspace_uuid": workspace_uuid,
                 "story_uuid": story_uuid,
             })
