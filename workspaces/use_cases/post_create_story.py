@@ -12,18 +12,12 @@ def post_create_story(payload: dict):
     if not len(workspace): raise NotFoundError("Workspace not found")
     if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
-    storyPayload = {
-        "name": payload["name"],
-        "desc": payload["desc"],
-        "priority": payload["priority"],
-        "status": payload["status"],
-        "list_uuid": List(uuid=payload["list_uuid"]),
-    }
+    payload["story_req"]["list_uuid"] = List(uuid=payload["list_uuid"])
 
-    isPayloadValid = StoryForm(storyPayload).is_patch_valid()
+    isPayloadValid = StoryForm(payload["story_req"]).is_patch_valid()
     if not isPayloadValid: raise ClientError("Invalid input")
 
-    newStory = Story(**storyPayload)
+    newStory = Story(**payload["story_req"])
     newStory.save()
 
     stories = Story.objects.filter(uuid=newStory.uuid).values("uuid", "name", "desc", "priority", "status")

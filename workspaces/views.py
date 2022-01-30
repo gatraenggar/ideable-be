@@ -372,10 +372,7 @@ class StoryCreatorView(WorkspaceView):
 
             createStoryResp = post_create_story({
                 "token": request.COOKIES.get('access_token'),
-                "name": payload["name"],
-                "desc": payload["desc"],
-                "priority": payload["priority"],
-                "status": payload["status"],
+                "story_req": payload,
                 "list_uuid": list_uuid,
                 "workspace_uuid": workspace_uuid,
             })

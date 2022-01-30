@@ -15,6 +15,7 @@ from .use_cases.post_verification_email import post_verification_email
 from .use_cases.post_login_oauth import post_login_oauth
 from .use_cases.post_login_email import post_login_email
 from .use_cases.post_logout import post_logout
+from .use_cases.post_renew_access_token import post_renew_access_token
 from .use_cases.put_verify_user_email import put_verify_user_email
 
 
@@ -256,11 +257,11 @@ class LogoutView(AuthView):
             return errorResponse(e)
 
 class AuthTokenView(AuthView):
-    def get(self, request):
+    def post(self, request):
         try:
             refreshToken = request.COOKIES.get('refresh_token')
 
-            logoutResp = post_logout({"refresh_token": refreshToken})
+            logoutResp = post_renew_access_token({"refresh_token": refreshToken})
 
             response = JsonResponse(
                 status = 200,
