@@ -564,7 +564,7 @@ class TaskAssigneeView(WorkspaceView):
                 status = 200,
                 data = {
                     "status": "success",
-                    "message": "Task has succesfully assigned to member",
+                    "message": "Success retrieving task's assignees",
                     "data": taskAssigneesResp,
                 }
             )

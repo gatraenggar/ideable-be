@@ -9,9 +9,9 @@ def post_add_task_assignee(payload: dict):
     userData = TokenManager.verify_access_token(payload["token"])
     userUUID = uuid.UUID(userData["user_uuid"])
 
-    workspace = Workspace.objects.filter(uuid=payload["workspace_uuid"], owner=userUUID).values("owner_id")
-    if not len(workspace): raise NotFoundError("Workspace not found")
-    if workspace[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
+    workspaces = Workspace.objects.filter(uuid=payload["workspace_uuid"], owner=userUUID).values("owner_id")
+    if not len(workspaces): raise NotFoundError("Workspace not found")
+    if workspaces[0]["owner_id"] != userUUID: raise AuthorizationError("Action is forbidden")
 
     assigneePayload = {
         "task_uuid": Task(uuid=payload["task_uuid"]),
@@ -21,15 +21,15 @@ def post_add_task_assignee(payload: dict):
     isPayloadValid = TaskAssigneeForm(assigneePayload).is_valid()
     if isPayloadValid == False: raise ClientError("Invalid input")
 
-    memberInfo = User.objects.filter(uuid=uuid.UUID(assigneePayload["workspace_member_uuid"])).values("email")
-    if not len(memberInfo): raise ClientError("Member is not found")
+    memberInfos = User.objects.filter(uuid=uuid.UUID(assigneePayload["workspace_member_uuid"])).values("email")
+    if not len(memberInfos): raise ClientError("Member is not found")
 
-    workspaceMember = WorkspaceMember.objects.filter(email=memberInfo["email"]).values("uuid")
-    if not len(workspaceMember): raise ClientError("Member is not valid")
+    workspaceMembers = WorkspaceMember.objects.filter(email=memberInfos[0]["email"]).values("uuid")
+    if not len(workspaceMembers): raise ClientError("Member is not valid")
 
     newAssignee = TaskAssignee(
         task_uuid=assigneePayload["task_uuid"],
-        workspace_member_uuid=WorkspaceMember(uuid=workspaceMember[0]["uuid"])
+        workspace_member_uuid=WorkspaceMember(uuid=workspaceMembers[0]["uuid"])
     )
     newAssignee.save()
 
