@@ -1,0 +1,2885 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: Ideable
+  contact:
+    name: Gatra Enggar
+    email: m.gatraenggar@gmail.com
+host: localhost:8080
+basePath: /v1
+securityDefinitions: {}
+schemes:
+- http
+consumes:
+- application/json
+produces:
+- application/json
+paths:
+  /auth/register:
+    post:
+      summary: Register User
+      tags:
+      - Auth
+      operationId: RegisterUser
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/RegisterUserRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/RegisterUserSuccess'
+          examples:
+            application/json:
+              status: success
+              message: User has successfully registered
+              data:
+                first_name: John
+                last_name: Doe
+                is_confirmed: false
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:22:32 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '143'
+            Vary:
+              type: string
+              default: Origin
+            Set-Cookie:
+              type: string
+              default: access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3V1aWQiOiJhZDJlZjQxOTNjZTg0NDFkYTFmOGJiNzcyNDJmNTc5MSIsImV4cCI6MTY0MzUzNTE1Mn0.zEUPzXceAQl2Uf4ZNj-isuNe9KN5x7Epoj9Ip1gHngQ; HttpOnly; Path=/
+  /auth/login:
+    post:
+      summary: Login
+      tags:
+      - Auth
+      operationId: Login
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/LoginSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Login success
+              data:
+                first_name: John
+                last_name: Doe
+                is_confirmed: false
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:23:25 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '124'
+            Vary:
+              type: string
+              default: Origin
+            Set-Cookie:
+              type: string
+              default: access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3V1aWQiOiJhZDJlZjQxOTNjZTg0NDFkYTFmOGJiNzcyNDJmNTc5MSIsImV4cCI6MTY0MzUzNTIwNX0.orwAI7VCjLrMNcX7J_IfU2K-ZrOJkrtjxuiL3T-mudU; HttpOnly; Path=/
+  /auth/logout:
+    post:
+      summary: Logout
+      tags:
+      - Auth
+      operationId: Logout
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/LogoutSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Logout success
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:24:22 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '50'
+            Vary:
+              type: string
+              default: Origin
+            Set-Cookie:
+              type: string
+              default: access_token=""; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/
+  /oauth/google/login:
+    get:
+      summary: Login Google OAuth
+      tags:
+      - Auth
+      operationId: LoginGoogleOAuth
+      deprecated: false
+      produces:
+      - text/html; charset=UTF-8
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: string
+            default: ''
+          headers:
+            X-Frame-Options:
+              type: string
+              default: DENY
+            x-auto-login:
+              type: string
+              default: realm=com.google&args=continue%3Dhttps%253A%252F%252Faccounts.google.com%252Fsignin%252Foauth%252Flegacy%252Fconsent%253Fauthuser%253Dunknown%2526part%253DAJi8hAN7w1ZICdsqzObGP5aaEusQjbSFtyqGxgBLlyrPHuVBW0oLIcdnQy9Q4tMQhXIPHNj7KJeVGErFJ1D4mtkeJV1pcR2PskmMBX8683T-LVuNcXSYG7W3QYhlNTbka1hX_8JjxjCXdfYFFq55jxOUQ5OmvbcmjKPmxHnSpfKikrRasvmF0r9rs_ZTaH0dMtcsOjVtL6l5iAW2NA8TjSjUFxG1lwBaqsWLWTjExOeRBBCThz1QG6u_QZXi46O1pUzTRUnMRJhlAKdIaxYefrCgyrU4qHdTdUVgF12KKyE1_g18Q_vHzVWhLN-9qujVs8w9paU08YClCC8cZA1gyzN3p3t_TfAhwdSYZ_S7UNDlSzPwmGvSsaN4a-aftobFjmgwcCBwDbu324e3H3lCzzoD5ukmh0UCZAS-bWtEHyr-jaBUs3ATfs5XDCJSOb2Ow0vx_NdRaqbxuTucHMU3xvuQ1OWlQWsxDw%2526as%253DS-1978717814%25253A1643534699846892%2526client_id%253D546225265232-mp3mgbavbet3kgg8g59n81bhuljcl7k3.apps.googleusercontent.com%2523
+            Cache-Control:
+              type: string
+              default: no-cache, no-store, max-age=0, must-revalidate
+            Pragma:
+              type: string
+              default: no-cache
+            Expires:
+              type: string
+              default: Mon, 01 Jan 1990 00:00:00 GMT
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:25:00 GMT
+            Transfer-Encoding:
+              type: string
+              default: chunked
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+            Content-Security-Policy:
+              type: string
+              default: require-trusted-types-for 'script';report-uri /cspreport
+            Report-To:
+              type: string
+              default: '{"group":"coop_gse_qebhlk","max_age":2592000,"endpoints":[{"url":"https://csp.withgoogle.com/csp/report-to/gse_qebhlk"}]}'
+            Cross-Origin-Opener-Policy-Report-Only:
+              type: string
+              default: same-origin; report-to="coop_gse_qebhlk"
+            X-Content-Type-Options:
+              type: string
+              default: nosniff
+            X-XSS-Protection:
+              type: string
+              default: 1; mode=block
+            Server:
+              type: string
+              default: GSE
+            Set-Cookie:
+              type: string
+              default: __Host-GAPS=1:eQfgZBz1A5xFKpIghhmO16BU2xmFpQ:W4FRbrPAnjGgqxWF;Path=/;Expires=Tue, 30-Jan-2024 09:25:00 GMT;Secure;HttpOnly;Priority=HIGH
+            Alt-Svc:
+              type: string
+              default: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000,h3-Q050=":443"; ma=2592000,h3-Q046=":443"; ma=2592000,h3-Q043=":443"; ma=2592000,quic=":443"; ma=2592000; v="46,43"
+  /oauth/google/login/callback:
+    post:
+      summary: Login Google OAuth Callback
+      tags:
+      - Auth
+      operationId: LoginGoogleOAuthCallback
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/LoginGoogleOAuthCallbackRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/LoginGoogleOAuthCallbackSuccess'
+          examples:
+            application/json:
+              status: success
+              message: OAuth success
+              data:
+                first_name: John
+                last_name: Doe
+                is_confirmed: false
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:29:29 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '124'
+            Vary:
+              type: string
+              default: Origin
+            Set-Cookie:
+              type: string
+              default: access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3V1aWQiOiJlZmQ3OTM5ZjJkYjQ0Yjg5OGE4ZGQ4NjJiZDVhNWE2OSIsImV4cCI6MTY0MzUzNTU2OX0.78A5eCiO0sGt6ZGQFMa0OXqg3lEsz5QHyD1oNB0_NIU; HttpOnly; Path=/
+  /auth/email-resending:
+    post:
+      summary: Re-send Email Verification
+      tags:
+      - Auth
+      operationId: Re-sendEmailVerification
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/Re-sendEmailVerificationRequest'
+      responses:
+        '202':
+          description: Accepted
+          schema:
+            $ref: '#/definitions/Re-sendEmailVerificationSuccess'
+          examples:
+            application/json:
+              status: success
+              message: An email verification has successfully re-sent
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:33:58 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '82'
+            Vary:
+              type: string
+              default: Origin
+  /auth:
+    post:
+      summary: Renew Access Token
+      tags:
+      - Auth
+      operationId: RenewAccessToken
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/RenewAccessTokenSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Access token has successfully generated
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:32:03 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '75'
+            Vary:
+              type: string
+              default: Origin
+            Set-Cookie:
+              type: string
+              default: access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3V1aWQiOiJhZDJlZjQxOTNjZTg0NDFkYTFmOGJiNzcyNDJmNTc5MSIsImV4cCI6MTY0MzUzNTcyM30.MzYWwnRCA9JNppQ6J9Ecyl8rASuJtjdsFolJJBJ1TEI; HttpOnly; Path=/
+  ? /auth/email-verification/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3V1aWQiOiJhZDJlZjQxOTNjZTg0NDFkYTFmOGJiNzcyNDJmNTc5MSIsImV4cCI6MTY0MzU0MTIzOH0.fGLcVYLW9o1ui4cByCIDPTc4By2JovJm6l6kEvXj_t8
+  : put:
+      summary: Verify Email
+      tags:
+      - Auth
+      operationId: VerifyEmail
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/VerifyEmailSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Email has successfully verified
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:40:43 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '67'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces:
+    post:
+      summary: Create Workspace
+      tags:
+      - Workspaces
+      operationId: CreateWorkspace
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/CreateWorkspaceRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateWorkspaceSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Workspace has successfully created
+              data:
+                uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+                name: My Workspace Title
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:43:20 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '158'
+            Vary:
+              type: string
+              default: Origin
+    get:
+      summary: Workspaces
+      tags:
+      - Workspaces
+      operationId: Workspaces
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkspacesSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Get user's workspaces
+              data:
+              - uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+                name: My Workspace Title
+              - uuid: 674cac88-3464-43c2-af31-2d423c00ce0d
+                name: Another Workspace Sample
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:44:56 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '233'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601:
+    get:
+      summary: Workspaces by ID
+      tags:
+      - Workspaces
+      operationId: WorkspacesbyID
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkspacesbyIDSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Get user's workspace by ID
+              data:
+                uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+                name: My Workspace Title
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:48:57 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '150'
+            Vary:
+              type: string
+              default: Origin
+      security: []
+    put:
+      summary: Update Workspace Name
+      tags:
+      - Workspaces
+      operationId: UpdateWorkspaceName
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/UpdateWorkspaceNameRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateWorkspaceNameSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Workspace has successfully updated
+              data:
+                uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+                name: Updated Workspace Name
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:49:36 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '162'
+            Vary:
+              type: string
+              default: Origin
+    delete:
+      summary: Workspace by ID
+      tags:
+      - Workspaces
+      operationId: WorkspacebyID
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkspacebyIDSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Workspace has successfully deleted
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:50:16 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '70'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/members:
+    post:
+      summary: Invite User to Workspace
+      tags:
+      - Members
+      operationId: InviteUsertoWorkspace
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/InviteUsertoWorkspaceRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/InviteUsertoWorkspaceSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Invitation email has successfully sent to user
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 09:53:17 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '82'
+            Vary:
+              type: string
+              default: Origin
+    delete:
+      summary: Member by Email
+      tags:
+      - Members
+      operationId: MemberbyEmail
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/MemberbyEmailRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/MemberbyEmailSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Member has succesfully removed
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:18:55 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '66'
+            Vary:
+              type: string
+              default: Origin
+  ? /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/members/invitation/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ3b3Jrc3BhY2VfdXVpZCI6IjJmZDcxNDBmYjJiYzQwOWRhYTlhY2Q1NmY3YzlmNjAxIiwiZW1haWwiOiJtLmdhdHJhZW5nZ2FyQGdtYWlsLmNvbSIsImV4cCI6MTY0MzU0MjY3M30.kGjedsDdKhK5tgcs8eddZLekz5lpYF8ryvMTicrdfSo
+  : put:
+      summary: Verify Workspace Member Status
+      tags:
+      - Members
+      operationId: VerifyWorkspaceMemberStatus
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/VerifyWorkspaceMemberStatusSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Workspace membership has successfully verified
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:17:50 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '82'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders:
+    post:
+      summary: Create Folder
+      tags:
+      - Folders
+      operationId: CreateFolder
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/CreateFolderRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateFolderSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Folder has successfully created
+              data:
+                uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+                name: My Folder Title
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:21:32 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '152'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/folders:
+    get:
+      summary: Folders by Workspace ID
+      tags:
+      - Folders
+      operationId: FoldersbyWorkspaceID
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: workspace_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/FoldersbyWorkspaceIDSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Success retrieving workspace's folder
+              data:
+              - uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+                name: My Folder Title
+                workspace_uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:26:14 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '218'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/ff92d2cb-2e92-40c2-be91-23ef13aa9655:
+    put:
+      summary: Update Folder Name
+      tags:
+      - Folders
+      operationId: UpdateFolderName
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/UpdateFolderNameRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateFolderNameSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Folder has successfully updated
+              data:
+                uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+                name: Updated Folder Title
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:27:46 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '157'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/5b8b3833-483c-4f92-9bfe-3df635df7ca4:
+    delete:
+      summary: Folder
+      tags:
+      - Folders
+      operationId: Folder
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/FolderSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Folder has successfully deleted
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:29:07 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '67'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/ff92d2cb-2e92-40c2-be91-23ef13aa9655/lists:
+    post:
+      summary: Create List
+      tags:
+      - Lists
+      operationId: CreateList
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/CreateListRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateListSuccess'
+          examples:
+            application/json:
+              status: success
+              message: List has successfully created
+              data:
+                uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+                name: My List Title
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:31:52 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '148'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/folders/lists:
+    get:
+      summary: Lists by Folder ID
+      tags:
+      - Lists
+      operationId: ListsbyFolderID
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: workspace_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      - name: folder_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/ListsbyFolderIDSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Success retrieving folder's lists
+              data:
+              - uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+                name: My List Title
+                folder_uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:34:10 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '209'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/df2ef577-c34c-443b-9e81-11cdf93cf6f0:
+    put:
+      summary: Update List Name
+      tags:
+      - Lists
+      operationId: UpdateListName
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/UpdateListNameRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateListNameSuccess'
+          examples:
+            application/json:
+              status: success
+              message: List has successfully updated
+              data:
+                uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+                name: Updated List Title
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:38:40 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '153'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/e32709fe-bfa0-4895-9ba9-b815a22fe22e:
+    delete:
+      summary: List
+      tags:
+      - Lists
+      operationId: List
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/ListSuccess'
+          examples:
+            application/json:
+              status: success
+              message: List has successfully deleted
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:39:56 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '65'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/df2ef577-c34c-443b-9e81-11cdf93cf6f0/stories:
+    post:
+      summary: Create Story
+      tags:
+      - Stories
+      operationId: CreateStory
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/CreateStoryRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateStorySuccess'
+          examples:
+            application/json:
+              status: success
+              message: Story has successfully created
+              data:
+                uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+                name: My story title
+                desc: null
+                priority: 1
+                status: 1
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 10:59:51 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '192'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/folders/lists/stories:
+    get:
+      summary: Stories by List ID
+      tags:
+      - Stories
+      operationId: StoriesbyListID
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: workspace_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      - name: list_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/StoriesbyListIDSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Success retrieving list's stories
+              data:
+              - uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+                name: My story title
+                desc: null
+                priority: 1
+                status: 1
+              - uuid: c61b14c3-a390-4e56-a8a3-6d2528712434
+                name: Other story
+                desc: null
+                priority: 1
+                status: 1
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 11:02:26 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '312'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/c996fb0a-c455-4e96-bd1d-aa75fe11de3a:
+    patch:
+      summary: Update Story Fields
+      tags:
+      - Stories
+      operationId: UpdateStoryFields
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/UpdateStoryFieldsRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateStoryFieldsSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Story has successfully updated
+              data:
+                uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+                name: Updated story title
+                desc: null
+                priority: 1
+                status: 4
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 11:03:37 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '197'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/c61b14c3-a390-4e56-a8a3-6d2528712434:
+    delete:
+      summary: Story
+      tags:
+      - Stories
+      operationId: Story
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/StorySuccess'
+          examples:
+            application/json:
+              status: success
+              message: Story has successfully deleted
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 11:04:37 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '66'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/c996fb0a-c455-4e96-bd1d-aa75fe11de3a/tasks:
+    post:
+      summary: Create Task
+      tags:
+      - Tasks
+      operationId: CreateTask
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/CreateTaskRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateTaskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Task has successfully created
+              data:
+                uuid: 27901b1d-a8ba-4751-8612-a39610238930
+                name: My task title
+                desc: null
+                priority: 1
+                status: 1
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 12:49:15 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '190'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/folders/lists/stories/tasks:
+    get:
+      summary: Tasks by Story ID
+      tags:
+      - Tasks
+      operationId: TasksbyStoryID
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: workspace_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      - name: story_ids
+        in: query
+        required: true
+        type: string
+        description: ''
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/TasksbyStoryIDSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Success retrieving story's tasks
+              data:
+              - uuid: 27901b1d-a8ba-4751-8612-a39610238930
+                name: My task title
+                desc: null
+                priority: 1
+                status: 1
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 12:51:26 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '195'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/tasks/27901b1d-a8ba-4751-8612-a39610238930:
+    patch:
+      summary: Update Task Fields
+      tags:
+      - Tasks
+      operationId: UpdateTaskFields
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/UpdateTaskFieldsRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateTaskFieldsSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Task has successfully updated
+              data:
+                uuid: 27901b1d-a8ba-4751-8612-a39610238930
+                name: My task title
+                desc: New description added
+                priority: 2
+                status: 1
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 12:52:06 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '209'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/tasks/15be3d63-5ec1-484d-8423-0cda1ffd3761:
+    delete:
+      summary: Task
+      tags:
+      - Tasks
+      operationId: Task
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/TaskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Task has successfully deleted
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 12:53:14 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '65'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/tasks/27901b1d-a8ba-4751-8612-a39610238930/assignees:
+    post:
+      summary: Assign Member to Task
+      tags:
+      - Task Assignees
+      operationId: AssignMembertoTask
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/AssignMembertoTaskRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/AssignMembertoTaskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Task has succesfully assigned to member
+              data:
+                uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+                workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:02:32 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '198'
+            Vary:
+              type: string
+              default: Origin
+    get:
+      summary: Assignees by Task
+      tags:
+      - Task Assignees
+      operationId: AssigneesbyTask
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/AssigneesbyTaskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Success retrieving task's assignees
+              data:
+                assignees:
+                - uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+                  workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:07:52 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '211'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/tasks/assignees/0942ddfa-3efd-4faf-8009-6cf3a17a7d1c:
+    delete:
+      summary: Unassign Member from Task
+      tags:
+      - Task Assignees
+      operationId: UnassignMemberfromTask
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UnassignMemberfromTaskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Member has successfully unassigned from task
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:08:49 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '80'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/tasks/27901b1d-a8ba-4751-8612-a39610238930/subtasks:
+    post:
+      summary: Create Sub-task
+      tags:
+      - Sub Tasks
+      operationId: CreateSub-task
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/CreateSub-taskRequest'
+      responses:
+        '201':
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateSub-taskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Sub-task has successfully created
+              data:
+                uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+                name: My sub-task title
+                is_done: false
+                assignee_uuid: null
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:10:42 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '197'
+            Vary:
+              type: string
+              default: Origin
+    get:
+      summary: Sub-tasks by Task
+      tags:
+      - Sub Tasks
+      operationId: Sub-tasksbyTask
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/Sub-tasksbyTaskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Sub-tasks has succesfully retrieved
+              data:
+                subtasks:
+                - uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+                  name: My sub-task title
+                  is_done: false
+                  assignee_uuid: null
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:11:22 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '215'
+            Vary:
+              type: string
+              default: Origin
+  /workspaces/2fd7140f-b2bc-409d-aa9a-cd56f7c9f601/folders/lists/stories/tasks/subtasks/2a2303ed-f77b-49ad-812c-6b9a2ea63500:
+    patch:
+      summary: Update Sub-task
+      tags:
+      - Sub Tasks
+      operationId: UpdateSub-task
+      deprecated: false
+      produces:
+      - application/json
+      parameters:
+      - name: Body
+        in: body
+        required: true
+        description: ''
+        schema:
+          $ref: '#/definitions/UpdateSub-taskRequest'
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/UpdateSub-taskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Sub-task has successfully updated
+              data:
+                uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+                name: Updated subtask title
+                is_done: false
+                assignee_uuid: null
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:12:50 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '201'
+            Vary:
+              type: string
+              default: Origin
+    delete:
+      summary: Sub-task
+      tags:
+      - Sub Tasks
+      operationId: Sub-task
+      deprecated: false
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: '#/definitions/Sub-taskSuccess'
+          examples:
+            application/json:
+              status: success
+              message: Sub-task has successfully deleted
+          headers:
+            Date:
+              type: string
+              default: Sun, 30 Jan 2022 13:13:20 GMT
+            Server:
+              type: string
+              default: WSGIServer/0.2 CPython/3.9.6
+            X-Frame-Options:
+              type: string
+              default: DENY
+            Content-Length:
+              type: string
+              default: '69'
+            Vary:
+              type: string
+              default: Origin
+definitions:
+  RegisterUserRequest:
+    title: RegisterUserRequest
+    example:
+      email: 'johndoe@gmail.com '
+      password: somePasswordHere
+      first_name: John
+      last_name: Doe
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+    required:
+    - email
+    - password
+    - first_name
+    - last_name
+  RegisterUserSuccess:
+    title: RegisterUserSuccess
+    example:
+      status: success
+      message: User has successfully registered
+      data:
+        first_name: John
+        last_name: Doe
+        is_confirmed: false
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data'
+    required:
+    - status
+    - message
+    - data
+  Data:
+    title: Data
+    example:
+      first_name: John
+      last_name: Doe
+      is_confirmed: false
+    type: object
+    properties:
+      first_name:
+        type: string
+      last_name:
+        type: string
+      is_confirmed:
+        type: boolean
+    required:
+    - first_name
+    - last_name
+    - is_confirmed
+  LoginRequest:
+    title: LoginRequest
+    example:
+      email: johndoe@gmail.com
+      password: somePasswordHere
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+  LoginSuccess:
+    title: LoginSuccess
+    example:
+      status: success
+      message: Login success
+      data:
+        first_name: John
+        last_name: Doe
+        is_confirmed: false
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data'
+    required:
+    - status
+    - message
+    - data
+  LogoutSuccess:
+    title: LogoutSuccess
+    example:
+      status: success
+      message: Logout success
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  LoginGoogleOAuthCallbackRequest:
+    title: LoginGoogleOAuthCallbackRequest
+    example:
+      email: johndoe@gmail.com
+      first_name: John
+      last_name: Doe
+    type: object
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+  LoginGoogleOAuthCallbackSuccess:
+    title: LoginGoogleOAuthCallbackSuccess
+    example:
+      status: success
+      message: OAuth success
+      data:
+        first_name: John
+        last_name: Doe
+        is_confirmed: false
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data'
+    required:
+    - status
+    - message
+    - data
+  Re-sendEmailVerificationRequest:
+    title: Re-sendEmailVerificationRequest
+    example:
+      email: johndoe@gmail.com
+    type: object
+    properties:
+      email:
+        type: string
+    required:
+    - email
+  Re-sendEmailVerificationSuccess:
+    title: Re-sendEmailVerificationSuccess
+    example:
+      status: success
+      message: An email verification has successfully re-sent
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  RenewAccessTokenSuccess:
+    title: RenewAccessTokenSuccess
+    example:
+      status: success
+      message: Access token has successfully generated
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  VerifyEmailSuccess:
+    title: VerifyEmailSuccess
+    example:
+      status: success
+      message: Email has successfully verified
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  CreateWorkspaceRequest:
+    title: CreateWorkspaceRequest
+    example:
+      name: Another Workspace Sample
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  CreateWorkspaceSuccess:
+    title: CreateWorkspaceSuccess
+    example:
+      status: success
+      message: Workspace has successfully created
+      data:
+        uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+        name: My Workspace Title
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  Data3:
+    title: Data3
+    example:
+      uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+      name: My Workspace Title
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+    required:
+    - uuid
+    - name
+  WorkspacesSuccess:
+    title: WorkspacesSuccess
+    example:
+      status: success
+      message: Get user's workspaces
+      data:
+      - uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+        name: My Workspace Title
+      - uuid: 674cac88-3464-43c2-af31-2d423c00ce0d
+        name: Another Workspace Sample
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  WorkspacesbyIDSuccess:
+    title: WorkspacesbyIDSuccess
+    example:
+      status: success
+      message: Get user's workspace by ID
+      data:
+        uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+        name: My Workspace Title
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  UpdateWorkspaceNameRequest:
+    title: UpdateWorkspaceNameRequest
+    example:
+      name: Updated Workspace Name
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  UpdateWorkspaceNameSuccess:
+    title: UpdateWorkspaceNameSuccess
+    example:
+      status: success
+      message: Workspace has successfully updated
+      data:
+        uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+        name: Updated Workspace Name
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  WorkspacebyIDSuccess:
+    title: WorkspacebyIDSuccess
+    example:
+      status: success
+      message: Workspace has successfully deleted
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  InviteUsertoWorkspaceRequest:
+    title: InviteUsertoWorkspaceRequest
+    example:
+      email: your.colleague@gmail.com
+    type: object
+    properties:
+      email:
+        type: string
+    required:
+    - email
+  InviteUsertoWorkspaceSuccess:
+    title: InviteUsertoWorkspaceSuccess
+    example:
+      status: success
+      message: Invitation email has successfully sent to user
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  MemberbyEmailRequest:
+    title: MemberbyEmailRequest
+    example:
+      email: your.friend@gmail.com
+    type: object
+    properties:
+      email:
+        type: string
+    required:
+    - email
+  MemberbyEmailSuccess:
+    title: MemberbyEmailSuccess
+    example:
+      status: success
+      message: Member has succesfully removed
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  VerifyWorkspaceMemberStatusSuccess:
+    title: VerifyWorkspaceMemberStatusSuccess
+    example:
+      status: success
+      message: Workspace membership has successfully verified
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  CreateFolderRequest:
+    title: CreateFolderRequest
+    example:
+      name: Random Folder
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  CreateFolderSuccess:
+    title: CreateFolderSuccess
+    example:
+      status: success
+      message: Folder has successfully created
+      data:
+        uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+        name: My Folder Title
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  FoldersbyWorkspaceIDSuccess:
+    title: FoldersbyWorkspaceIDSuccess
+    example:
+      status: success
+      message: Success retrieving workspace's folder
+      data:
+      - uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+        name: My Folder Title
+        workspace_uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/Data8'
+    required:
+    - status
+    - message
+    - data
+  Data8:
+    title: Data8
+    example:
+      uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+      name: My Folder Title
+      workspace_uuid: 2fd7140f-b2bc-409d-aa9a-cd56f7c9f601
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+      workspace_uuid:
+        type: string
+    required:
+    - uuid
+    - name
+    - workspace_uuid
+  UpdateFolderNameRequest:
+    title: UpdateFolderNameRequest
+    example:
+      name: Updated Folder Title
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  UpdateFolderNameSuccess:
+    title: UpdateFolderNameSuccess
+    example:
+      status: success
+      message: Folder has successfully updated
+      data:
+        uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+        name: Updated Folder Title
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  FolderSuccess:
+    title: FolderSuccess
+    example:
+      status: success
+      message: Folder has successfully deleted
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  CreateListRequest:
+    title: CreateListRequest
+    example:
+      name: Another Title
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  CreateListSuccess:
+    title: CreateListSuccess
+    example:
+      status: success
+      message: List has successfully created
+      data:
+        uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+        name: My List Title
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  ListsbyFolderIDSuccess:
+    title: ListsbyFolderIDSuccess
+    example:
+      status: success
+      message: Success retrieving folder's lists
+      data:
+      - uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+        name: My List Title
+        folder_uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/Data11'
+    required:
+    - status
+    - message
+    - data
+  Data11:
+    title: Data11
+    example:
+      uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+      name: My List Title
+      folder_uuid: ff92d2cb-2e92-40c2-be91-23ef13aa9655
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+      folder_uuid:
+        type: string
+    required:
+    - uuid
+    - name
+    - folder_uuid
+  UpdateListNameRequest:
+    title: UpdateListNameRequest
+    example:
+      name: Updated List Title
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  UpdateListNameSuccess:
+    title: UpdateListNameSuccess
+    example:
+      status: success
+      message: List has successfully updated
+      data:
+        uuid: df2ef577-c34c-443b-9e81-11cdf93cf6f0
+        name: Updated List Title
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data3'
+    required:
+    - status
+    - message
+    - data
+  ListSuccess:
+    title: ListSuccess
+    example:
+      status: success
+      message: List has successfully deleted
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  CreateStoryRequest:
+    title: CreateStoryRequest
+    example:
+      name: Other story
+      priority: 1
+      status: 1
+    type: object
+    properties:
+      name:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      status:
+        type: integer
+        format: int32
+    required:
+    - name
+    - priority
+    - status
+  CreateStorySuccess:
+    title: CreateStorySuccess
+    example:
+      status: success
+      message: Story has successfully created
+      data:
+        uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+        name: My story title
+        desc: null
+        priority: 1
+        status: 1
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data13'
+    required:
+    - status
+    - message
+    - data
+  Data13:
+    title: Data13
+    example:
+      uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+      name: My story title
+      desc: null
+      priority: 1
+      status: 1
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+      desc:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      status:
+        type: integer
+        format: int32
+    required:
+    - uuid
+    - name
+    - desc
+    - priority
+    - status
+  StoriesbyListIDSuccess:
+    title: StoriesbyListIDSuccess
+    example:
+      status: success
+      message: Success retrieving list's stories
+      data:
+      - uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+        name: My story title
+        desc: null
+        priority: 1
+        status: 1
+      - uuid: c61b14c3-a390-4e56-a8a3-6d2528712434
+        name: Other story
+        desc: null
+        priority: 1
+        status: 1
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/Data13'
+    required:
+    - status
+    - message
+    - data
+  UpdateStoryFieldsRequest:
+    title: UpdateStoryFieldsRequest
+    example:
+      name: Updated story title
+      status: 4
+    type: object
+    properties:
+      name:
+        type: string
+      status:
+        type: integer
+        format: int32
+    required:
+    - name
+    - status
+  UpdateStoryFieldsSuccess:
+    title: UpdateStoryFieldsSuccess
+    example:
+      status: success
+      message: Story has successfully updated
+      data:
+        uuid: c996fb0a-c455-4e96-bd1d-aa75fe11de3a
+        name: Updated story title
+        desc: null
+        priority: 1
+        status: 4
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data13'
+    required:
+    - status
+    - message
+    - data
+  StorySuccess:
+    title: StorySuccess
+    example:
+      status: success
+      message: Story has successfully deleted
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  CreateTaskRequest:
+    title: CreateTaskRequest
+    example:
+      name: Another task
+      priority: 2
+      status: 3
+    type: object
+    properties:
+      name:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      status:
+        type: integer
+        format: int32
+    required:
+    - name
+    - priority
+    - status
+  CreateTaskSuccess:
+    title: CreateTaskSuccess
+    example:
+      status: success
+      message: Task has successfully created
+      data:
+        uuid: 27901b1d-a8ba-4751-8612-a39610238930
+        name: My task title
+        desc: null
+        priority: 1
+        status: 1
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data13'
+    required:
+    - status
+    - message
+    - data
+  TasksbyStoryIDSuccess:
+    title: TasksbyStoryIDSuccess
+    example:
+      status: success
+      message: Success retrieving story's tasks
+      data:
+      - uuid: 27901b1d-a8ba-4751-8612-a39610238930
+        name: My task title
+        desc: null
+        priority: 1
+        status: 1
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/Data13'
+    required:
+    - status
+    - message
+    - data
+  UpdateTaskFieldsRequest:
+    title: UpdateTaskFieldsRequest
+    example:
+      desc: New description added
+      priority: 2
+    type: object
+    properties:
+      desc:
+        type: string
+      priority:
+        type: integer
+        format: int32
+    required:
+    - desc
+    - priority
+  UpdateTaskFieldsSuccess:
+    title: UpdateTaskFieldsSuccess
+    example:
+      status: success
+      message: Task has successfully updated
+      data:
+        uuid: 27901b1d-a8ba-4751-8612-a39610238930
+        name: My task title
+        desc: New description added
+        priority: 2
+        status: 1
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data18'
+    required:
+    - status
+    - message
+    - data
+  Data18:
+    title: Data18
+    example:
+      uuid: 27901b1d-a8ba-4751-8612-a39610238930
+      name: My task title
+      desc: New description added
+      priority: 2
+      status: 1
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+      desc:
+        type: string
+      priority:
+        type: integer
+        format: int32
+      status:
+        type: integer
+        format: int32
+    required:
+    - uuid
+    - name
+    - desc
+    - priority
+    - status
+  TaskSuccess:
+    title: TaskSuccess
+    example:
+      status: success
+      message: Task has successfully deleted
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  AssignMembertoTaskRequest:
+    title: AssignMembertoTaskRequest
+    example:
+      workspace_member_uuid: efd7939f-2db4-4b89-8a8d-d862bd5a5a69
+    type: object
+    properties:
+      workspace_member_uuid:
+        type: string
+    required:
+    - workspace_member_uuid
+  AssignMembertoTaskSuccess:
+    title: AssignMembertoTaskSuccess
+    example:
+      status: success
+      message: Task has succesfully assigned to member
+      data:
+        uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+        workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data19'
+    required:
+    - status
+    - message
+    - data
+  Data19:
+    title: Data19
+    example:
+      uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+      workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+    type: object
+    properties:
+      uuid:
+        type: string
+      workspace_member_uuid:
+        type: string
+    required:
+    - uuid
+    - workspace_member_uuid
+  AssigneesbyTaskSuccess:
+    title: AssigneesbyTaskSuccess
+    example:
+      status: success
+      message: Success retrieving task's assignees
+      data:
+        assignees:
+        - uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+          workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data20'
+    required:
+    - status
+    - message
+    - data
+  Data20:
+    title: Data20
+    example:
+      assignees:
+      - uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+        workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+    type: object
+    properties:
+      assignees:
+        type: array
+        items:
+          $ref: '#/definitions/Assignee'
+    required:
+    - assignees
+  Assignee:
+    title: Assignee
+    example:
+      uuid: 0942ddfa-3efd-4faf-8009-6cf3a17a7d1c
+      workspace_member_uuid: b1b349b9-c912-48ef-8ed1-affee9add607
+    type: object
+    properties:
+      uuid:
+        type: string
+      workspace_member_uuid:
+        type: string
+    required:
+    - uuid
+    - workspace_member_uuid
+  UnassignMemberfromTaskSuccess:
+    title: UnassignMemberfromTaskSuccess
+    example:
+      status: success
+      message: Member has successfully unassigned from task
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+  CreateSub-taskRequest:
+    title: CreateSub-taskRequest
+    example:
+      name: My sub-task title
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  CreateSub-taskSuccess:
+    title: CreateSub-taskSuccess
+    example:
+      status: success
+      message: Sub-task has successfully created
+      data:
+        uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+        name: My sub-task title
+        is_done: false
+        assignee_uuid: null
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data21'
+    required:
+    - status
+    - message
+    - data
+  Data21:
+    title: Data21
+    example:
+      uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+      name: My sub-task title
+      is_done: false
+      assignee_uuid: null
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+      is_done:
+        type: boolean
+      assignee_uuid:
+        type: string
+    required:
+    - uuid
+    - name
+    - is_done
+    - assignee_uuid
+  Sub-tasksbyTaskSuccess:
+    title: Sub-tasksbyTaskSuccess
+    example:
+      status: success
+      message: Sub-tasks has succesfully retrieved
+      data:
+        subtasks:
+        - uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+          name: My sub-task title
+          is_done: false
+          assignee_uuid: null
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data22'
+    required:
+    - status
+    - message
+    - data
+  Data22:
+    title: Data22
+    example:
+      subtasks:
+      - uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+        name: My sub-task title
+        is_done: false
+        assignee_uuid: null
+    type: object
+    properties:
+      subtasks:
+        type: array
+        items:
+          $ref: '#/definitions/Subtask'
+    required:
+    - subtasks
+  Subtask:
+    title: Subtask
+    example:
+      uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+      name: My sub-task title
+      is_done: false
+      assignee_uuid: null
+    type: object
+    properties:
+      uuid:
+        type: string
+      name:
+        type: string
+      is_done:
+        type: boolean
+      assignee_uuid:
+        type: string
+    required:
+    - uuid
+    - name
+    - is_done
+    - assignee_uuid
+  UpdateSub-taskRequest:
+    title: UpdateSub-taskRequest
+    example:
+      name: Updated subtask title
+    type: object
+    properties:
+      name:
+        type: string
+    required:
+    - name
+  UpdateSub-taskSuccess:
+    title: UpdateSub-taskSuccess
+    example:
+      status: success
+      message: Sub-task has successfully updated
+      data:
+        uuid: 2a2303ed-f77b-49ad-812c-6b9a2ea63500
+        name: Updated subtask title
+        is_done: false
+        assignee_uuid: null
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+      data:
+        $ref: '#/definitions/Data21'
+    required:
+    - status
+    - message
+    - data
+  Sub-taskSuccess:
+    title: Sub-taskSuccess
+    example:
+      status: success
+      message: Sub-task has successfully deleted
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+    required:
+    - status
+    - message
+tags:
+- name: Auth
+- name: Workspaces
+- name: Members
+- name: Folders
+- name: Lists
+- name: Stories
+- name: Tasks
+- name: Task Assignees
+- name: Sub Tasks
